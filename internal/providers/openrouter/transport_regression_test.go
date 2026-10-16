@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -58,9 +59,9 @@ func TestRetryAfterBounds(t *testing.T) {
 }
 
 func TestHugeRetryAfterNeverRetries(t *testing.T) {
-	calls := 0
+	var calls atomic.Int32
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
+		calls.Add(1)
 		w.Header().Set("Retry-After", "18446744073709551616")
 		w.WriteHeader(http.StatusTooManyRequests)
 	}))
@@ -75,8 +76,8 @@ func TestHugeRetryAfterNeverRetries(t *testing.T) {
 	if _, err = c.do(context.Background(), http.MethodGet, "/api/v1/models", nil); err == nil {
 		t.Fatal("expected rate-limit failure")
 	}
-	if calls != 1 {
-		t.Fatalf("sent %d requests", calls)
+	if calls.Load() != 1 {
+		t.Fatalf("sent %d requests", calls.Load())
 	}
 }
 

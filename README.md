@@ -11,7 +11,11 @@ Content note: fictional android violence.
 
 ## Start offline
 
-Requires Go 1.22+. Production uses the standard library; JSON Schema validation is
+Use a currently supported, patched Go toolchain. `go.mod` recommends Go 1.27.2
+(and Go's automatic toolchain selection downloads it when needed); the source
+language remains Go 1.22-compatible. Older toolchains are compatibility-test
+only, not recommended for inference or publication because of standard-library
+security fixes. Production uses the standard library; JSON Schema validation is
 a test-only dependency. Download modules once, then tests need no model API key.
 
 ```bash
@@ -102,7 +106,8 @@ go run ./cmd/site build --data site/data --out dist
 ```
 
 Resume preserves the immutable plan and completed responses. Condition/transport
-settings cannot change; create a new run instead. Interrupted requests might have
+settings cannot change; create a new run instead. Timeouts must use whole
+milliseconds (1ms–10m) so recorded settings round-trip exactly. Interrupted requests might have
 been processed/billed: `--retry-interrupted` is explicit consent to retry.
 `--retry-errors` retries operational failures without a completed response.
 Rejudging appends evaluations without changing the action. Run locks reject
@@ -118,6 +123,10 @@ Synthetic export requires `--allow-fixtures` and never pools with live data.
 
 Export removes private attempts, headers, diagnostics, hidden reasoning and local
 output paths. Review public JSON before committing `site/data/dataset.json`.
+Saved observations are checked against the immutable plan and re-normalized from
+the actual response before resume or export. Inconsistent records, incomplete
+plans, unplanned results and public diagnostic payloads are rejected rather than
+silently scored or repaired.
 Raw .benchmark-data/, dist/ and bin/ are ignored; ignore custom raw roots yourself.
 Build validates links and replaces only empty/marked generated output, refusing
 dangerous paths and symlinks. Unchanged inputs produce byte-identical builds.
@@ -158,7 +167,14 @@ gofmt -l cmd internal web
 go vet ./...
 go test ./...
 go test -race ./...    # Requires cgo and a supported C compiler.
+GOTOOLCHAIN=go1.27.2 go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+GOTOOLCHAIN=go1.27.2 go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...  # Uses the online vulnerability database.
+go test ./internal/safety -run '^$' -fuzz FuzzJSONRedaction -fuzztime 10s
 ```
+
+The tool commands explicitly select the recommended compiler because versioned
+`go run tool@version` does not use the project's `toolchain` recommendation. With
+a newer supported Go installation, select that version instead.
 
 Tests cover golden prompts, schemas, protocol edge cases, HTTP fixtures/retries,
 durable resume/rejudge, redaction, cohort export and offline rebuilding.
@@ -166,6 +182,9 @@ Golden updates: `UPDATE_GOLDEN=1 go test ./internal/benchmarks`.
 Fixture updates: `UPDATE_FIXTURES=1 go test ./internal/runner`; review their diffs.
 Local race testing was unavailable on the implementation host (cgo disabled, no
 C compiler); CI is configured to run it on Linux, not claimed to have passed yet.
+CI tests current stable Go on Linux and Windows, keeps a separate Go 1.22 source
+compatibility check, and scans the current toolchain with Staticcheck and
+Govulncheck. Only the current stable Linux job publishes the static artifact.
 
 Optional real-browser checks need Node 22+, Chrome/Edge and the installed
 design-taste-frontend skill, not a frontend dependency:

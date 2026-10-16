@@ -1,22 +1,46 @@
-name: offline checks and static artifact
+name: checks and static artifact
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            go: stable
+          - os: windows-latest
+            go: stable
+          # Source compatibility only; never use this obsolete toolchain for releases.
+          - os: ubuntu-latest
+            go: 1.22.x
+    runs-on: ${{ matrix.os }}
+    env:
+      # Do not let go.mod's recommended toolchain mask the compatibility check.
+      GOTOOLCHAIN: local
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ matrix.go }}
           cache: true
       - run: test -z "$(gofmt -l cmd internal web)"
       - run: go vet ./...
       - run: go test ./...
-      - run: go test -race ./...
-      - run: go run ./cmd/site build --data site/data --out dist
-      - uses: actions/upload-artifact@v4
+      - if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+        run: go test -race ./...
+      - if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+      - if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+      - if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+        run: go run ./cmd/site build --data site/data --out dist
+      - if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+        uses: actions/upload-artifact@v4
         with:
           name: static-site
           path: dist
