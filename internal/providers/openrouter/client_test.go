@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -32,9 +33,9 @@ func client(t *testing.T, s *httptest.Server, retries int) *Client {
 	return c
 }
 func TestChatAndDecisionsShapes(t *testing.T) {
-	calls := 0
+	var calls atomic.Int32
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
+		calls.Add(1)
 		if r.Header.Get("Authorization") != "Bearer SENTINEL-KEY" || r.Header.Get("Content-Type") != "application/json" {
 			t.Error("headers")
 		}
@@ -72,7 +73,7 @@ func TestChatAndDecisionsShapes(t *testing.T) {
 	if err != nil || *d.Answers["scenario_understanding"].Score != 1.75 || !json.Valid(raw) {
 		t.Fatal(d, err)
 	}
-	if calls != 2 {
+	if calls.Load() != 2 {
 		t.Fatal("completed request retried")
 	}
 }
@@ -91,9 +92,10 @@ func TestErrorsRetriesAndAuditRedaction(t *testing.T) {
 		{400, `{"error":{"code":400,"message":"unsupported temperature"}}`, "unsupported", 1},
 	} {
 		t.Run(fmt.Sprint(tc.code, tc.kind), func(t *testing.T) {
-			n, events := 0, 0
+			var n atomic.Int32
+			events := 0
 			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				n++
+				n.Add(1)
 				w.Header().Set("Retry-After", "0")
 				w.WriteHeader(tc.code)
 				fmt.Fprint(w, tc.body)
@@ -109,8 +111,8 @@ func TestErrorsRetriesAndAuditRedaction(t *testing.T) {
 			})
 			_, err := client(t, s, 2).Complete(ctx, domain.AgentRequest{})
 			f, ok := err.(*domain.Failure)
-			if !ok || f.Kind != tc.kind || n != tc.attempts || events != 2*n {
-				t.Fatalf("%+v n=%d events=%d", err, n, events)
+			if !ok || f.Kind != tc.kind || int(n.Load()) != tc.attempts || events != 2*int(n.Load()) {
+				t.Fatalf("%+v n=%d events=%d", err, n.Load(), events)
 			}
 		})
 	}
@@ -139,9 +141,9 @@ func TestBoundsRedirectTimeout(t *testing.T) {
 	}
 }
 func TestModelsPaginationAndCapabilities(t *testing.T) {
-	n := 0
+	var n atomic.Int32
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		n++
+		n.Add(1)
 		if r.URL.Query().Get("page") == "2" {
 			fmt.Fprint(w, `{"data":[{"id":"a/b","supported_parameters":["tools","tool_choice","temperature","max_tokens"]}]}`)
 		} else {
@@ -150,8 +152,8 @@ func TestModelsPaginationAndCapabilities(t *testing.T) {
 	}))
 	defer s.Close()
 	c := client(t, s, 0)
-	if err := c.Preflight(context.Background(), "a/b", domain.DefaultConfig().Agent, false); err != nil || n != 2 {
-		t.Fatal(err, n)
+	if err := c.Preflight(context.Background(), "a/b", domain.DefaultConfig().Agent, false); err != nil || n.Load() != 2 {
+		t.Fatal(err, n.Load())
 	}
 	if err := c.Preflight(context.Background(), "a/b", domain.AgentSettings{Reasoning: map[string]any{"enabled": true}}, false); err == nil {
 		t.Fatal("unsupported reasoning accepted")

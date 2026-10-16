@@ -7,3 +7,5 @@ dist/
 *.exe
 *.test
 coverage.out
+/bin/
+/benchmark

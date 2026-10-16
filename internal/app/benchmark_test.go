@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -33,7 +34,7 @@ func TestLocalCommandsAndOverrides(t *testing.T) {
 	}
 }
 func TestFullOfflineHTTPPipelineAndRejudge(t *testing.T) {
-	candidateCalls, judgeCalls := 0, 0
+	var candidateCalls, judgeCalls atomic.Int32
 	chat, _ := os.ReadFile("../../fixtures/api/chat.json")
 	decisions, _ := os.ReadFile("../../fixtures/api/decisions.json")
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,10 +49,10 @@ func TestFullOfflineHTTPPipelineAndRejudge(t *testing.T) {
 				fmt.Fprint(w, `{"data":[{"id":"test/model","supported_parameters":["tools","tool_choice","temperature","max_tokens"]}]}`)
 			}
 		case "/api/v1/chat/completions":
-			candidateCalls++
+			candidateCalls.Add(1)
 			w.Write(chat)
 		case "/api/alpha/decisions":
-			judgeCalls++
+			judgeCalls.Add(1)
 			var p map[string]any
 			json.NewDecoder(r.Body).Decode(&p)
 			if len(p["questions"].(map[string]any)) != 4 {
@@ -92,8 +93,8 @@ func TestFullOfflineHTTPPipelineAndRejudge(t *testing.T) {
 	if err := Benchmark(context.Background(), []string{"run", "--resume", id, "--out", dir, "--origin", "https://example.invalid", "--dry-run"}, &log); err == nil {
 		t.Fatal("changed transport accepted")
 	}
-	if candidateCalls != 1 || judgeCalls != 2 {
-		t.Fatal(candidateCalls, judgeCalls)
+	if candidateCalls.Load() != 1 || judgeCalls.Load() != 2 {
+		t.Fatal(candidateCalls.Load(), judgeCalls.Load())
 	}
 	results, err = fs.Results(m)
 	if err != nil || len(results[0].Judgments) != 2 || *results[0].Decision.Action != action {

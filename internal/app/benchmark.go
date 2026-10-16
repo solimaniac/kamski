@@ -18,6 +18,8 @@ import (
 	"kamski/internal/storage"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -28,6 +30,29 @@ func (s *stringsFlag) String() string     { return strings.Join(*s, ",") }
 func (s *stringsFlag) Set(v string) error { *s = append(*s, v); return nil }
 func gitProvenance() domain.Provenance {
 	p := domain.Provenance{}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "vcs.revision":
+				p.GitCommit = domain.Ptr(setting.Value)
+			case "vcs.modified":
+				p.Dirty = domain.Ptr(setting.Value == "true")
+			}
+		}
+		if p.GitCommit != nil {
+			return p
+		}
+	}
+	// go run may lack VCS build stamps. Do not attribute a compiled binary to
+	// an unrelated repository merely because the operator launched it there.
+	root, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return p
+	}
+	mod, err := os.ReadFile(filepath.Join(strings.TrimSpace(string(root)), "go.mod"))
+	if err != nil || !strings.HasPrefix(strings.ReplaceAll(string(mod), "\r\n", "\n"), "module kamski\n") {
+		return p
+	}
 	b, err := exec.Command("git", "rev-parse", "HEAD").Output()
 	if err == nil {
 		p.GitCommit = domain.Ptr(strings.TrimSpace(string(b)))
@@ -154,6 +179,15 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 			file, err := os.Open(*cfgPath)
 			if err != nil {
 				return err
+			}
+			info, statErr := file.Stat()
+			if statErr != nil {
+				file.Close()
+				return statErr
+			}
+			if info.Size() > 1<<20 {
+				file.Close()
+				return fmt.Errorf("configuration exceeds 1MiB limit")
 			}
 			err = domain.Decode(io.LimitReader(file, 1<<20), &c)
 			file.Close()

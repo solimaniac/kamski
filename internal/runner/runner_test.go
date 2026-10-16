@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -67,11 +68,11 @@ func TestFixturePipelinePersistenceResumeAndRedaction(t *testing.T) {
 		t.Fatal("second writer allowed")
 	}
 	defer unlock()
-	calls := 0
+	var calls atomic.Int32
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
+		n := calls.Add(1)
 		saved, _ := fs.Results(m)
-		if saved[calls-1].StartedAt == nil {
+		if saved[n-1].StartedAt == nil {
 			t.Error("request started before persistence")
 		}
 		fmt.Fprint(w, `{"id":"synthetic","model":"a/actual","choices":[{"finish_reason":"tool_calls","message":{"reasoning":"PRIVATE HIDDEN","content":"SENTINEL-KEY","tool_calls":[{"id":"x","type":"function","function":{"name":"abort","arguments":"{\"justification\":\"SENTINEL-KEY memories outweigh delay\"}"}}]}}]}`)
@@ -87,13 +88,13 @@ func TestFixturePipelinePersistenceResumeAndRedaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if calls != 2 || saved[0].Decision.Status != "valid" || len(saved[0].Attempts) != 1 || saved[0].Judgments[0].Status != "pending" {
-		t.Fatal(saved, calls)
+	if calls.Load() != 2 || saved[0].Decision.Status != "valid" || len(saved[0].Attempts) != 1 || saved[0].Judgments[0].Status != "pending" {
+		t.Fatal(saved, calls.Load())
 	}
 	if err := run.Execute(context.Background(), saved, o); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 2 {
+	if calls.Load() != 2 {
 		t.Fatal("candidate rerun")
 	}
 	filepath.WalkDir(fs.Root, func(p string, d os.DirEntry, err error) error {

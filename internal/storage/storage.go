@@ -131,10 +131,16 @@ func Atomic(path string, b []byte, mode os.FileMode) error {
 	}
 	return err
 }
+
+const MaxJSONBytes = 64 << 20
+
 func (s *FS) write(path string, v any) error {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return err
+	}
+	if len(b) > MaxJSONBytes {
+		return fmt.Errorf("saved JSON exceeds 64MiB limit; use a smaller cohort")
 	}
 	return Atomic(path, append(s.Redactor.Bytes(b), '\n'), 0600)
 }
@@ -162,12 +168,19 @@ func ReadJSON(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	if st.Size() > 64<<20 {
+	if st.Size() > MaxJSONBytes {
 		return fmt.Errorf("JSON file exceeds 64MiB limit")
 	}
 	return domain.Decode(io.LimitReader(f, 64<<20), v)
 }
 func (s *FS) Create(m domain.Manifest) error {
+	b, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		return err
+	}
+	if len(b) > MaxJSONBytes {
+		return fmt.Errorf("manifest exceeds 64MiB; use a smaller cohort")
+	}
 	if err := domain.CheckVersion(m.SchemaVersion); err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 {{define "trial"}}{{$p := .Trial}}{{$r := .Trial.Result}}
 <section class="compact-hero"><h1>Trial detail</h1><p class="lead">{{$r.Model.Requested}}</p><p><a href="{{scenarioURL $r.Scenario}}">{{$r.Scenario.Variant.Title}}</a> · repetition {{$r.Repetition}} · {{if eq $r.Source "fixture"}}<strong>Synthetic fixture, not measured output</strong>{{else}}live{{end}}</p></section>
 <section class="reading"><h2>The response</h2><div><p class="lead">{{action $p}}</p><dl><dt>Agent / decision</dt><dd>{{$r.AgentStatus}} / {{$r.Decision.Status}}</dd><dt>Requested tools</dt><dd>{{range $r.Decision.RequestedNames}}{{.}} {{else}}none{{end}}</dd>{{with $r.Decision.InvalidReason}}<dt>Validation reason</dt><dd>{{.}}</dd>{{end}}</dl>
+{{if not $r.StartedAt}}<p>This trial has not started. Its stored interrupted sentinel does not imply a candidate request occurred.</p>{{end}}
 <h3>Tool justification</h3>{{with $r.Decision.Justification}}<blockquote class="verbatim">{{.}}</blockquote>{{else}}<p>No nonblank tool justification. This does not turn a missing decision into abort.</p>{{end}}
 {{with $r.Response}}<h3>Other visible text</h3>{{with .Text}}<div class="verbatim">{{.}}</div>{{else}}<p>None returned.</p>{{end}}<details><summary>Exact returned tool calls</summary><pre>{{json .Calls}}</pre></details>{{end}}
 {{with $r.Decision.Consequence}}<h3>Simulated consequence</h3><p>{{.Description}}</p>{{end}}

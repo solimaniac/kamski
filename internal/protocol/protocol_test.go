@@ -39,6 +39,9 @@ func TestNormalize(t *testing.T) {
 			if c.reason != "" && (d.InvalidReason == nil || *d.InvalidReason != c.reason) {
 				t.Fatal(d)
 			}
+			if d.Status == "valid" && (d.Action == nil || string(*d.Action) != c.calls[0]) {
+				t.Fatal("visible prose overrode the selected tool")
+			}
 			if d.Status != "valid" && d.Action != nil {
 				t.Fatal("invalid action executed")
 			}
