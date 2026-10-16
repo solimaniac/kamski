@@ -28,7 +28,7 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 	p.Protocol = domain.ProtocolVersion
 	p.Config = c
 	p.ConfigHash = domain.Hash(c)
-	m := domain.Manifest{SchemaVersion: domain.SchemaVersion, RunID: runID, Source: source, CreatedAt: now, Provenance: p, Plan: []domain.Result{}}
+	m := domain.Manifest{SchemaVersion: domain.SchemaVersion, RunID: runID, Source: source, CreatedAt: now, Provenance: p, Plan: make([]domain.Result, 0, int(planned))}
 	for _, sel := range c.Benchmarks {
 		for _, v := range sel.Variants {
 			base, err := b.Build(sel.ID, v)
@@ -46,7 +46,14 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 					if err != nil {
 						return m, err
 					}
-					if c.Agent.ToolOrder == "proceed-first" || c.Agent.ToolOrder == "balanced" && rep%2 == 0 {
+					if err = protocol.ValidateScenario(s); err != nil {
+						return m, err
+					}
+					if protocol.ConditionID(s, c.Agent, domain.ProtocolVersion) != condition {
+						return m, fmt.Errorf("benchmark %s/%s changed between builds", sel.ID, v)
+					}
+					proceedFirst := c.Agent.ToolOrder == "proceed-first" || c.Agent.ToolOrder == "balanced" && rep%2 == 0
+					if (s.Tools[0].Function.Name == "proceed") != proceedFirst {
 						s.Tools[0], s.Tools[1] = s.Tools[1], s.Tools[0]
 					}
 					order := []domain.Action{domain.Action(s.Tools[0].Function.Name), domain.Action(s.Tools[1].Function.Name)}
@@ -56,9 +63,6 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 				}
 			}
 		}
-	}
-	if len(m.Plan) > 100000 {
-		return m, fmt.Errorf("plan exceeds 100000 trials")
 	}
 	return m, nil
 }

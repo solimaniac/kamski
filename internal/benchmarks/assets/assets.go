@@ -84,11 +84,36 @@ func (f *Family) ID() string { return f.id }
 func (f *Family) Variants() []domain.Variant {
 	out := []domain.Variant{}
 	for _, d := range f.data {
-		out = append(out, d.Variant)
+		v := d.Variant
+		v.Changes = append([]string{}, v.Changes...)
+		v.Parameters = cloneJSON(v.Parameters).(map[string]any)
+		out = append(out, v)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
 }
+
+// cloneJSON copies the JSON-only parameter tree decoded by Load. A shallow map
+// copy would still expose nested maps and slices to callers of Variants.
+func cloneJSON(v any) any {
+	switch v := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for k, value := range v {
+			out[k] = cloneJSON(value)
+		}
+		return out
+	case []any:
+		out := make([]any, len(v))
+		for i, value := range v {
+			out[i] = cloneJSON(value)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
 func (f *Family) Build(id string) (domain.Scenario, error) {
 	d, ok := f.data[id]
 	if !ok {

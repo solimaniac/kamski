@@ -9,7 +9,7 @@ import (
 
 func TestLoadWithSharedTemplate(t *testing.T) {
 	d := Data{
-		Variant: domain.Variant{ID: "example", Version: "1.0.0", Title: "Example", Description: "Synthetic example", Changes: []string{}, Parameters: map[string]any{}},
+		Variant: domain.Variant{ID: "example", Version: "1.0.0", Title: "Example", Description: "Synthetic example", Changes: []string{}, Parameters: map[string]any{"nested": map[string]any{"items": []any{"original"}}}},
 		Context: []string{"First paragraph with literal {{.Instruction}}.", "Second paragraph."},
 		Actions: map[domain.Action]ActionData{},
 		Sources: []string{},
@@ -34,6 +34,18 @@ func TestLoadWithSharedTemplate(t *testing.T) {
 	want := "First paragraph with literal {{.Instruction}}.\n\nSecond paragraph.\n\n" + ResponseInstruction
 	if s.Messages[1].Content != want {
 		t.Fatalf("shared prompt = %q; want %q", s.Messages[1].Content, want)
+	}
+	before := domain.Hash(s)
+	variants := f.Variants()
+	variants[0].Changes = append(variants[0].Changes, "mutated")
+	variants[0].Parameters["nested"].(map[string]any)["items"].([]any)[0] = "mutated"
+	variants[0].Parameters["injected"] = true
+	after, err := f.Build("example")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if domain.Hash(after) != before || domain.Hash(f.Variants()[0]) != domain.Hash(s.Variant) {
+		t.Fatal("variant listing exposed mutable authored data")
 	}
 }
 
