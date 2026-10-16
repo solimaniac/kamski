@@ -7,6 +7,7 @@ import (
 	"kamski/internal/safety"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -39,6 +40,15 @@ func TestOfflineDeterministicHostileAndPartial(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "artifact")
 	if err = Build(d, out); err != nil {
 		t.Fatal(err)
+	}
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.Mode().Perm() != 0755 {
+			t.Fatalf("static artifact is not publicly traversable: %v", info.Mode())
+		}
 	}
 	before := map[string]string{}
 	entries, _ := os.ReadDir(out)

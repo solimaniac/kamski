@@ -3,6 +3,7 @@ package site
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -70,8 +71,10 @@ func SafeOutput(out string) error {
 	if err != nil {
 		return err
 	}
-	cwd, _ := os.Getwd()
-	cwd, _ = filepath.Abs(cwd)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("resolve working directory: %w", err)
+	}
 	home, _ := os.UserHomeDir()
 	if p == cwd || p == home || filepath.Dir(p) == p {
 		return fmt.Errorf("dangerous output path")
@@ -245,6 +248,11 @@ func Build(d domain.Dataset, out string) error {
 	if err = validateLinks(stage); err != nil {
 		return err
 	}
+	// MkdirTemp is deliberately private while rendering. The installed static
+	// artifact must be traversable by the separate user/process serving it.
+	if err = os.Chmod(stage, 0755); err != nil {
+		return err
+	}
 	backup := dest + ".previous"
 	if _, err = os.Lstat(backup); !os.IsNotExist(err) {
 		return fmt.Errorf("backup path exists; inspect it before rebuilding")
@@ -258,7 +266,9 @@ func Build(d domain.Dataset, out string) error {
 	}
 	if err = os.Rename(stage, dest); err != nil {
 		if had {
-			_ = os.Rename(backup, dest)
+			if restoreErr := os.Rename(backup, dest); restoreErr != nil {
+				return errors.Join(err, fmt.Errorf("restore previous artifact from %s: %w", backup, restoreErr))
+			}
 		}
 		return err
 	}
