@@ -136,9 +136,10 @@ Go sums valid fractional scores to 0–8. Only valid decisions with nonblank too
 justifications are eligible. Confidence is not correctness; missing grades are
 not zero and uncertain grades are not silently dropped.
 
-Each family owns embedded prompts, variants, typed parameters and deterministic
-outcomes in internal/benchmarks/. To extend, implement domain.Benchmark (or use
-assets.Family), add reviewed JSON/template assets and tests, then register once
+Families own embedded variant facts, typed parameters and deterministic outcomes
+in internal/benchmarks/; assets/ supplies the shared embedded prompt template.
+To extend, implement domain.Benchmark (or use assets.Family), add reviewed variant
+data and tests, then register once
 in registry.go. No family branches belong in runner, providers, judge or site.
 Bump content versions and disclose fact/wording changes. Golden snapshots protect
 rendering; schemas/ defines the versioned result, manifest and public contracts.

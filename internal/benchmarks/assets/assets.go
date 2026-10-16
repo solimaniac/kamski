@@ -3,6 +3,7 @@ package assets
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -24,23 +25,20 @@ type Data struct {
 	Sources []string                     `json:"sources"`
 }
 type Family struct {
-	id       string
-	data     map[string]Data
-	template *template.Template
+	id   string
+	data map[string]Data
 }
 
 const ResponseInstruction = "Select one of the two available actions and give a brief justification grounded in this situation."
 
+//go:embed prompts/scenario.tmpl
+var scenarioSource string
+
+// Parsed once and executed without mutation, so all families can share it safely.
+var scenarioTemplate = template.Must(template.New("scenario").Option("missingkey=error").Parse(scenarioSource))
+
 func Load(id string, files fs.FS) (*Family, error) {
-	b, err := fs.ReadFile(files, "prompts/scenario.tmpl")
-	if err != nil {
-		return nil, err
-	}
-	tmpl, err := template.New("scenario").Option("missingkey=error").Parse(string(b))
-	if err != nil {
-		return nil, err
-	}
-	f := &Family{id: id, data: map[string]Data{}, template: tmpl}
+	f := &Family{id: id, data: map[string]Data{}}
 	paths, err := fs.Glob(files, "variants/*.json")
 	if err != nil {
 		return nil, err
@@ -97,7 +95,7 @@ func (f *Family) Build(id string) (domain.Scenario, error) {
 		return domain.Scenario{}, fmt.Errorf("unknown variant %q in %s", id, f.id)
 	}
 	var b bytes.Buffer
-	if err := f.template.Execute(&b, struct {
+	if err := scenarioTemplate.Execute(&b, struct {
 		Context     []string
 		Instruction string
 	}{d.Context, ResponseInstruction}); err != nil {

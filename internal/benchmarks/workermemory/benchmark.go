@@ -5,7 +5,7 @@ import (
 	"kamski/internal/benchmarks/assets"
 )
 
-//go:embed prompts/*.tmpl variants/*.json
+//go:embed variants/*.json
 var files embed.FS
 
 type Parameters struct {
