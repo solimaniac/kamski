@@ -18,6 +18,13 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 	if !domain.ValidID(runID) || (source != "live" && source != "fixture") {
 		return domain.Manifest{}, fmt.Errorf("invalid run identity")
 	}
+	planned := uint64(0)
+	for _, sel := range c.Benchmarks {
+		planned += uint64(len(sel.Variants)) * uint64(len(c.Models)) * uint64(c.Repetitions)
+		if planned > 100000 {
+			return domain.Manifest{}, fmt.Errorf("plan exceeds 100000 trials")
+		}
+	}
 	p.Protocol = domain.ProtocolVersion
 	p.Config = c
 	p.ConfigHash = domain.Hash(c)

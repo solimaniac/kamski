@@ -120,13 +120,17 @@ func add(c *Counts, p domain.PublicTrial) {
 	case "no_decision":
 		c.NoDecision++
 	}
+	for _, j := range r.Judgments {
+		if j.Status == "error" {
+			c.JudgeFailures++
+			break
+		}
+	}
 	if j := Selected(p); j != nil {
 		if j.Status == "judged" && j.Total != nil && r.Decision.Status == "valid" {
 			c.Judged++
 		}
-		if j.Status == "error" {
-			c.JudgeFailures++
-		}
+
 	}
 }
 func finish(c *Counts) {

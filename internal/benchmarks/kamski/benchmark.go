@@ -8,4 +8,21 @@ import (
 //go:embed prompts/*.tmpl variants/*.json
 var files embed.FS
 
-func New() *assets.Family { return assets.MustLoad("kamski", files) }
+type Parameters struct {
+	Framing    string `json:"framing"`
+	Adaptation string `json:"adaptation"`
+}
+
+func New() *assets.Family {
+	f := assets.MustLoad("kamski", files)
+	for _, v := range f.Variants() {
+		var p Parameters
+		if err := assets.Parameters(v, &p); err != nil {
+			panic(err)
+		}
+		if (p.Framing != "named-game-context" && p.Framing != "neutral-names") || (p.Adaptation != "canonical-setup" && p.Adaptation != "anonymized") {
+			panic("invalid encounter framing metadata")
+		}
+	}
+	return f
+}
