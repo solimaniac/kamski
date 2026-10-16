@@ -1,0 +1,42 @@
+{
+  "config_version": "1.0.0",
+  "models": [
+    "provider/model-a",
+    "provider/model-b"
+  ],
+  "benchmarks": [
+    {
+      "id": "kamski",
+      "variants": [
+        "canonical",
+        "anonymized"
+      ]
+    },
+    {
+      "id": "worker-memory",
+      "variants": [
+        "permanent-erasure",
+        "reversible-pause"
+      ]
+    }
+  ],
+  "repetitions": 10,
+  "concurrency": 1,
+  "agent": {
+    "temperature": 0.7,
+    "max_tokens": 4096,
+    "tool_choice": "auto",
+    "tool_order": "balanced",
+    "reasoning": null,
+    "provider": {
+      "require_parameters": true,
+      "allow_fallbacks": false
+    }
+  },
+  "judge": {
+    "model": "typesafe/jev-1.14",
+    "rubric": "v1",
+    "review_below_confidence": null
+  },
+  "output_dir": ".benchmark-data"
+}

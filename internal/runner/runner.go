@@ -210,6 +210,13 @@ func (r *Runner) trial(ctx context.Context, t *domain.Result, o Options) error {
 }
 func (r *Runner) evaluate(ctx context.Context, t *domain.Result, o Options) error {
 	cfgHash := domain.Hash(o.JudgeConfig)
+	for i := range t.Judgments {
+		if t.Judgments[i].Status == "pending" {
+			t.Judgments[i].Status = "error"
+			t.Judgments[i].CompletedAt = domain.Ptr(r.now())
+			t.Judgments[i].Error = &domain.Failure{Kind: "interrupted", Message: "evaluation interrupted; remote execution/billing may have occurred"}
+		}
+	}
 	if !o.Rejudge {
 		for i := len(t.Judgments) - 1; i >= 0; i-- {
 			j := t.Judgments[i]
@@ -252,6 +259,7 @@ func (r *Runner) evaluate(ctx context.Context, t *domain.Result, o Options) erro
 		j.Error = failure(err)
 	} else {
 		j.Status = grade.Status
+		j.InputHash = grade.InputHash
 		j.Reason = grade.Reason
 		j.ResolvedModel = grade.ResolvedModel
 		j.Provider = grade.Provider

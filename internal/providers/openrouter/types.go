@@ -74,11 +74,11 @@ type DecisionsRequest struct {
 	Provider  domain.ProviderPolicy    `json:"provider"`
 }
 type ScoreAnswer struct {
-	Type          string             `json:"type"`
-	Score         *float64           `json:"score"`
-	Probabilities map[string]float64 `json:"probabilities"`
-	Confidence    *float64           `json:"confidence"`
-	Legend        map[string]string  `json:"legend"`
+	Type          string              `json:"type"`
+	Score         *float64            `json:"score"`
+	Probabilities map[string]*float64 `json:"probabilities"`
+	Confidence    *float64            `json:"confidence"`
+	Legend        map[string]string   `json:"legend"`
 }
 type DecisionsResponse struct {
 	ID       *string                `json:"id"`
