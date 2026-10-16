@@ -54,6 +54,9 @@ func Export(existing domain.Dataset, cohorts []Cohort, group string, allowFixtur
 	replace := map[string]bool{}
 	for _, c := range cohorts {
 		m := c.Manifest
+		if err := protocol.ValidateManifest(m); err != nil {
+			return d, err
+		}
 		if replace[m.RunID] {
 			return d, fmt.Errorf("duplicate selected run")
 		}
@@ -63,6 +66,19 @@ func Export(existing domain.Dataset, cohorts []Cohort, group string, allowFixtur
 		}
 		if len(c.Results) != len(m.Plan) {
 			return d, fmt.Errorf("publication must include complete planned cohort")
+		}
+		planned := make(map[string]domain.Result, len(m.Plan))
+		for _, r := range m.Plan {
+			planned[r.TrialID] = r
+		}
+		for _, r := range c.Results {
+			p, ok := planned[r.TrialID]
+			if !ok {
+				return d, fmt.Errorf("trial not in selected manifest: %s", r.TrialID)
+			}
+			if err := protocol.ValidatePlannedResult(r, p); err != nil {
+				return d, err
+			}
 		}
 	}
 	trials := []domain.PublicTrial{}
@@ -141,7 +157,7 @@ func Validate(d domain.Dataset) error {
 	for _, p := range d.Trials {
 		r := p.Result
 		run, ok := runs[r.RunID]
-		if !ok || run.Source != r.Source || seen[r.TrialID] || !domain.ValidID(r.TrialID) {
+		if !ok || run.Source != r.Source || run.ConfigHash != r.Provenance.ConfigHash || seen[r.TrialID] || !domain.ValidID(r.TrialID) {
 			return fmt.Errorf("invalid public trial identity")
 		}
 		seen[r.TrialID] = true
@@ -152,10 +168,13 @@ func Validate(d domain.Dataset) error {
 		if err := protocol.ValidateIdentity(r); err != nil {
 			return err
 		}
+		if err := protocol.ValidateState(r); err != nil {
+			return err
+		}
 		if len(r.Attempts) != 0 || r.Provenance.Config.OutputDir != "[private]" {
 			return fmt.Errorf("public record contains private paths or attempt references")
 		}
-		if r.Error != nil && (len(r.Error.Metadata) != 0 && string(r.Error.Metadata) != "null" || r.Error.Message != privateError(r.Error).Message) {
+		if r.Error != nil && (len(r.Error.Metadata) != 0 && string(r.Error.Metadata) != "null" || r.Error.Message != privateError(r.Error).Message || r.Error.Code != nil) {
 			return fmt.Errorf("public error contains private diagnostics")
 		}
 		if r.Decision.Status == "valid" {
@@ -167,26 +186,32 @@ func Validate(d domain.Dataset) error {
 		}
 		ids := map[string]bool{}
 		for _, j := range r.Judgments {
-			if ids[j.ID] {
+			if !domain.ValidID(j.ID) || ids[j.ID] {
 				return fmt.Errorf("duplicate evaluation")
 			}
 			ids[j.ID] = true
-			if j.Error != nil && (len(j.Error.Metadata) != 0 && string(j.Error.Metadata) != "null" || j.Error.Message != privateError(j.Error).Message) {
+			if j.Error != nil && (len(j.Error.Metadata) != 0 && string(j.Error.Metadata) != "null" || j.Error.Message != privateError(j.Error).Message || j.Error.Code != nil) {
 				return fmt.Errorf("public evaluation contains diagnostics")
 			}
 			if j.Status == "judged" {
 				if j.Total == nil || *j.Total < 0 || *j.Total > 8 || len(j.Answers) != 4 {
 					return fmt.Errorf("invalid public grade")
 				}
-				rubric, _, err := rubrics.Load(j.RubricVersion)
+				rubric, hash, err := rubrics.Load(j.RubricVersion)
 				if err != nil {
 					return err
+				}
+				if j.RubricHash != hash || j.ResolvedModel == nil || *j.ResolvedModel == "" {
+					return fmt.Errorf("invalid public judge identity")
 				}
 				total := 0.0
 				for _, criterion := range rubric.Criteria {
 					a, ok := j.Answers[criterion.ID]
 					if !ok || math.IsNaN(a.Score) || math.IsInf(a.Score, 0) || a.Score < 0 || a.Score > 2 || len(a.Probabilities) != 3 {
 						return fmt.Errorf("invalid criterion")
+					}
+					if a.Confidence != nil && (math.IsNaN(*a.Confidence) || math.IsInf(*a.Confidence, 0) || *a.Confidence < 0 || *a.Confidence > 1) {
+						return fmt.Errorf("invalid criterion confidence")
 					}
 					sum := 0.0
 					for _, k := range []string{"0", "1", "2"} {

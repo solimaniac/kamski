@@ -23,6 +23,11 @@ func TestOfflineDeterministicHostileAndPartial(t *testing.T) {
 	}
 	hostile := `<script>alert("x")</script><img src=x onerror=alert(1)>`
 	d.Trials[0].Result.Decision.Justification = &hostile
+	arguments, err := json.Marshal(map[string]string{"justification": hostile})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.Trials[0].Result.Response.Calls[0].Arguments = string(arguments)
 	d.Trials[0].Result.Response.Text = &hostile
 	d.Trials[0].Result.Model.Requested = hostile
 	d.Trials[0].Result.Error = &domain.Failure{Kind: "api_error", Message: "SENTINEL-KEY"}

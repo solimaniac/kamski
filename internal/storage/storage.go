@@ -169,21 +169,31 @@ func ReadJSON(path string, v any) error {
 	if err != nil {
 		return err
 	}
+	if !st.Mode().IsRegular() {
+		return fmt.Errorf("JSON input must be a regular file")
+	}
 	if st.Size() > MaxJSONBytes {
 		return fmt.Errorf("JSON file exceeds 64MiB limit")
 	}
-	return domain.Decode(io.LimitReader(f, 64<<20), v)
+	// The file may grow after Stat. Read one byte beyond the bound so a valid
+	// prefix followed by excessive whitespace cannot be mistaken for EOF.
+	limited := &io.LimitedReader{R: f, N: MaxJSONBytes + 1}
+	err = domain.Decode(limited, v)
+	if limited.N == 0 {
+		return fmt.Errorf("JSON file exceeds 64MiB limit")
+	}
+	return err
 }
 func (s *FS) Create(m domain.Manifest) error {
+	if err := protocol.ValidateManifest(m); err != nil {
+		return err
+	}
 	b, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
 	}
 	if len(b)+1 > MaxJSONBytes {
 		return fmt.Errorf("manifest exceeds 64MiB; use a smaller cohort")
-	}
-	if err := domain.CheckVersion(m.SchemaVersion); err != nil {
-		return err
 	}
 	p, err := s.runPath(m.RunID)
 	if err != nil {
@@ -218,26 +228,10 @@ func (s *FS) Manifest(id string) (domain.Manifest, error) {
 	if err != nil {
 		return m, err
 	}
-	if err = domain.CheckVersion(m.SchemaVersion); err != nil {
-		return m, err
+	if m.RunID != id {
+		return m, fmt.Errorf("manifest run ID mismatch")
 	}
-	if err = domain.ValidateConfig(m.Provenance.Config); err != nil {
-		return m, err
-	}
-	seen := map[string]bool{}
-	for _, r := range m.Plan {
-		if r.RunID != id || r.Source != m.Source || seen[r.TrialID] || domain.Hash(r.Provenance) != domain.Hash(m.Provenance) {
-			return m, fmt.Errorf("invalid manifest trial identity")
-		}
-		seen[r.TrialID] = true
-		if err = protocol.ValidateIdentity(r); err != nil {
-			return m, err
-		}
-	}
-	if m.RunID != id || m.Provenance.ConfigHash != domain.Hash(m.Provenance.Config) {
-		return m, fmt.Errorf("manifest identity/configuration hash mismatch")
-	}
-	return m, nil
+	return m, protocol.ValidateManifest(m)
 }
 func (s *FS) Results(m domain.Manifest) ([]domain.Result, error) {
 	out := []domain.Result{}
@@ -251,11 +245,8 @@ func (s *FS) Results(m domain.Manifest) ([]domain.Result, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err = domain.CheckVersion(r.SchemaVersion); err != nil {
+		if err = protocol.ValidatePlannedResult(r, planned); err != nil {
 			return nil, err
-		}
-		if r.RunID != planned.RunID || r.TrialID != planned.TrialID || r.Source != m.Source || r.Repetition != planned.Repetition || domain.Hash(r.Scenario) != domain.Hash(planned.Scenario) || domain.Hash(r.Comparison) != domain.Hash(planned.Comparison) || r.Model.Requested != planned.Model.Requested || domain.Hash(r.Provenance) != domain.Hash(planned.Provenance) {
-			return nil, fmt.Errorf("stored trial differs from immutable plan: %s", planned.TrialID)
 		}
 		out = append(out, r)
 	}

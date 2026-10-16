@@ -3,6 +3,7 @@ package reporting
 import (
 	"encoding/json"
 	"kamski/internal/domain"
+	"kamski/internal/protocol"
 	"kamski/internal/safety"
 	"os"
 	"strings"
@@ -74,7 +75,11 @@ func TestExportWholeCohortSanitization(t *testing.T) {
 	rows := append([]domain.Result(nil), m.Plan...)
 	rows[0].Error = &domain.Failure{Kind: "api_error", Message: "SENTINEL-KEY C:/private/diagnostic", Metadata: json.RawMessage(`{"secret":"SENTINEL-KEY"}`)}
 	rows[0].Attempts = []domain.AttemptRef{{Path: "C:/private/path"}}
-	rows[0].Response = &domain.AgentResponse{Text: domain.Ptr("<script>SENTINEL-KEY</script>")}
+	rows[0].StartedAt = domain.Ptr(rows[0].CreatedAt)
+	rows[0].CompletedAt = domain.Ptr(rows[0].CreatedAt)
+	rows[0].AgentStatus = "completed"
+	rows[0].Response = &domain.AgentResponse{FinishReason: domain.Ptr("stop"), Text: domain.Ptr("<script>SENTINEL-KEY</script>")}
+	rows[0].Decision = protocol.Normalize(rows[0].AgentStatus, rows[0].Response, rows[0].Scenario)
 	cohorts := []Cohort{{Manifest: m, Results: rows}}
 	if _, err := Export(domain.Dataset{}, cohorts, "", false, safety.Redactor{}); err == nil {
 		t.Fatal("fixture published silently")
