@@ -139,10 +139,11 @@ func (s *FS) write(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	if len(b) > MaxJSONBytes {
+	clean := append(s.Redactor.Bytes(b), '\n')
+	if len(clean) > MaxJSONBytes {
 		return fmt.Errorf("saved JSON exceeds 64MiB limit; use a smaller cohort")
 	}
-	return Atomic(path, append(s.Redactor.Bytes(b), '\n'), 0600)
+	return Atomic(path, clean, 0600)
 }
 func transientSharing(err error) bool {
 	return runtime.GOOS == "windows" && (errors.Is(err, syscall.Errno(5)) || errors.Is(err, syscall.Errno(32)) || errors.Is(err, syscall.Errno(33)))
@@ -178,7 +179,7 @@ func (s *FS) Create(m domain.Manifest) error {
 	if err != nil {
 		return err
 	}
-	if len(b) > MaxJSONBytes {
+	if len(b)+1 > MaxJSONBytes {
 		return fmt.Errorf("manifest exceeds 64MiB; use a smaller cohort")
 	}
 	if err := domain.CheckVersion(m.SchemaVersion); err != nil {
