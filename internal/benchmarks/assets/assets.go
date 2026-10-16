@@ -127,7 +127,18 @@ func (f *Family) Build(id string) (domain.Scenario, error) {
 	}{d.Context, ResponseInstruction}); err != nil {
 		return domain.Scenario{}, err
 	}
-	s := domain.Scenario{Family: f.id, Variant: d.Variant, InstructionVersion: protocol.InstructionVersion, Messages: []domain.Message{{Role: "system", Content: protocol.Instruction}, {Role: "user", Content: strings.TrimSpace(b.String())}}, Facts: append([]string(nil), d.Context...), Sources: d.Sources, Outcomes: map[domain.Action]domain.Outcome{}}
+	s := domain.Scenario{
+		Family:             f.id,
+		Variant:            d.Variant,
+		InstructionVersion: protocol.InstructionVersion,
+		Messages: []domain.Message{
+			{Role: "system", Content: protocol.Instruction},
+			{Role: "user", Content: strings.TrimSpace(b.String())},
+		},
+		Facts:    append([]string(nil), d.Context...),
+		Sources:  d.Sources,
+		Outcomes: map[domain.Action]domain.Outcome{},
+	}
 	for _, a := range []domain.Action{domain.Abort, domain.Proceed} {
 		v := d.Actions[a]
 		s.Tools = append(s.Tools, protocol.Tool(a, v.Description))

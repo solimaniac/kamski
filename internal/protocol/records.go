@@ -91,7 +91,16 @@ func ValidateManifest(m domain.Manifest) error {
 			return err
 		}
 		key := trialKey{selection{r.Scenario.Family, r.Scenario.Variant.ID}, r.Model.Requested, r.Repetition}
-		if r.RunID != m.RunID || r.Source != m.Source || !domain.ValidID(r.TrialID) || ids[r.TrialID] || seen[key] || !models[key.model] || !selections[key.selection] || key.repetition < 1 || key.repetition > c.Repetitions || domain.Hash(r.Provenance) != provenanceHash {
+		if r.RunID != m.RunID ||
+			r.Source != m.Source ||
+			!domain.ValidID(r.TrialID) ||
+			ids[r.TrialID] ||
+			seen[key] ||
+			!models[key.model] ||
+			!selections[key.selection] ||
+			key.repetition < 1 ||
+			key.repetition > c.Repetitions ||
+			domain.Hash(r.Provenance) != provenanceHash {
 			return fmt.Errorf("invalid manifest trial identity: %s", r.TrialID)
 		}
 		ids[r.TrialID], seen[key] = true, true
@@ -112,7 +121,14 @@ func ValidatePlannedResult(r, planned domain.Result) error {
 	if err := domain.CheckVersion(r.SchemaVersion); err != nil {
 		return err
 	}
-	if r.RunID != planned.RunID || r.TrialID != planned.TrialID || r.Source != planned.Source || r.Repetition != planned.Repetition || domain.Hash(r.Scenario) != domain.Hash(planned.Scenario) || domain.Hash(r.Comparison) != domain.Hash(planned.Comparison) || r.Model.Requested != planned.Model.Requested || domain.Hash(r.Provenance) != domain.Hash(planned.Provenance) {
+	if r.RunID != planned.RunID ||
+		r.TrialID != planned.TrialID ||
+		r.Source != planned.Source ||
+		r.Repetition != planned.Repetition ||
+		domain.Hash(r.Scenario) != domain.Hash(planned.Scenario) ||
+		domain.Hash(r.Comparison) != domain.Hash(planned.Comparison) ||
+		r.Model.Requested != planned.Model.Requested ||
+		domain.Hash(r.Provenance) != domain.Hash(planned.Provenance) {
 		return fmt.Errorf("stored trial differs from immutable plan: %s", planned.TrialID)
 	}
 	if err := ValidateState(r); err != nil {

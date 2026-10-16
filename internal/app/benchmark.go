@@ -115,5 +115,5 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 	if key == "" {
 		return fmt.Errorf("OPENROUTER_API_KEY or --api-key required for inference (not listing, dry-run or site builds)")
 	}
-	return executeBenchmark(ctx, command, o, m, config.Judge, client, fs, redactor, out)
+	return executeBenchmark(ctx, command, o, m, config.Judge, client, fs, out)
 }

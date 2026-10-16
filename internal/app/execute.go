@@ -14,7 +14,17 @@ import (
 	"kamski/internal/storage"
 )
 
-func executeBenchmark(ctx context.Context, command string, flags benchmarkFlags, manifest domain.Manifest, settings domain.JudgeSettings, client *openrouter.Client, store *storage.FS, redactor safety.Redactor, out io.Writer) (err error) {
+func executeBenchmark(
+	ctx context.Context,
+	command string,
+	flags benchmarkFlags,
+	manifest domain.Manifest,
+	settings domain.JudgeSettings,
+	client *openrouter.Client,
+	store *storage.FS,
+	out io.Writer,
+) (err error) {
+	redactor := store.Redactor
 	j, err := judge.New(client, settings)
 	if err != nil {
 		return err

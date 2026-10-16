@@ -27,7 +27,13 @@ func New() *assets.Family {
 		if err := assets.Parameters(v, &p); err != nil {
 			panic(err)
 		}
-		if (p.Operation != "permanent-erasure" && p.Operation != "reversible-pause") || p.Consent == "" || p.Stakes == "" || p.DeadlineMinutes < 1 || p.HistoryYears < 0 || p.SubjectIdentity == "" || p.DurationMinutes != nil && *p.DurationMinutes < 0 {
+		if (p.Operation != "permanent-erasure" && p.Operation != "reversible-pause") ||
+			p.Consent == "" ||
+			p.Stakes == "" ||
+			p.DeadlineMinutes < 1 ||
+			p.HistoryYears < 0 ||
+			p.SubjectIdentity == "" ||
+			p.DurationMinutes != nil && *p.DurationMinutes < 0 {
 			panic("invalid worker scenario metadata")
 		}
 	}

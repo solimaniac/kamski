@@ -60,7 +60,28 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 					order := []domain.Action{domain.Action(s.Tools[0].Function.Name), domain.Action(s.Tools[1].Function.Name)}
 					stimulus := protocol.StimulusHash(s)
 					id := "trial-" + domain.Hash([]any{runID, condition, model, rep})[:20]
-					m.Plan = append(m.Plan, domain.Result{SchemaVersion: domain.SchemaVersion, RunID: runID, TrialID: id, Source: source, Repetition: rep, CreatedAt: now, UpdatedAt: now, Provenance: p, Scenario: s, Comparison: domain.Comparison{ConditionID: condition, StimulusHash: stimulus, ToolOrder: order, Settings: c.Agent}, Model: domain.Model{Requested: model}, AgentStatus: "interrupted", Decision: domain.Decision{Status: "not_evaluated", RequestedNames: []string{}}, Judgments: []domain.Judgment{}, Attempts: []domain.AttemptRef{}})
+					m.Plan = append(m.Plan, domain.Result{
+						SchemaVersion: domain.SchemaVersion,
+						RunID:         runID,
+						TrialID:       id,
+						Source:        source,
+						Repetition:    rep,
+						CreatedAt:     now,
+						UpdatedAt:     now,
+						Provenance:    p,
+						Scenario:      s,
+						Comparison: domain.Comparison{
+							ConditionID:  condition,
+							StimulusHash: stimulus,
+							ToolOrder:    order,
+							Settings:     c.Agent,
+						},
+						Model:       domain.Model{Requested: model},
+						AgentStatus: "interrupted",
+						Decision:    domain.Decision{Status: "not_evaluated", RequestedNames: []string{}},
+						Judgments:   []domain.Judgment{},
+						Attempts:    []domain.AttemptRef{},
+					})
 				}
 			}
 		}
