@@ -10,6 +10,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode"
 )
 
 const SchemaVersion = "1.0.0"
@@ -296,6 +297,29 @@ func ValidID(id string) bool {
 	}
 	return true
 }
+func validModelID(id string) bool {
+	return id != "" && len(id) <= 200 && strings.IndexFunc(id, func(r rune) bool {
+		return unicode.IsSpace(r) || unicode.IsControl(r)
+	}) < 0
+}
+
+func validateProvider(p ProviderPolicy) error {
+	if !p.RequireParameters {
+		return fmt.Errorf("require_parameters must remain true")
+	}
+	if p.DataCollection != "" && p.DataCollection != "allow" && p.DataCollection != "deny" {
+		return fmt.Errorf("invalid data_collection")
+	}
+	seen := make(map[string]bool, len(p.Only))
+	for _, pin := range p.Only {
+		if strings.TrimSpace(pin) != pin || pin == "" || strings.IndexFunc(pin, unicode.IsControl) >= 0 || seen[pin] {
+			return fmt.Errorf("invalid/duplicate provider pin")
+		}
+		seen[pin] = true
+	}
+	return nil
+}
+
 func ValidateConfig(c Config) error {
 	if err := CheckVersion(c.Version); err != nil {
 		return err
@@ -305,7 +329,7 @@ func ValidateConfig(c Config) error {
 	}
 	seen := map[string]bool{}
 	for _, m := range c.Models {
-		if strings.TrimSpace(m) != m || m == "" || len(m) > 200 || strings.ContainsAny(m, "\r\n\x00") {
+		if !validModelID(m) {
 			return fmt.Errorf("invalid model identifier")
 		}
 		if seen[m] {
@@ -341,19 +365,15 @@ func ValidateConfig(c Config) error {
 	default:
 		return fmt.Errorf("invalid tool_order")
 	}
-	if !c.Agent.Provider.RequireParameters {
-		return fmt.Errorf("require_parameters must remain true")
+	if err := validateProvider(c.Agent.Provider); err != nil {
+		return fmt.Errorf("agent provider: %w", err)
 	}
-	if c.Agent.Provider.DataCollection != "" && c.Agent.Provider.DataCollection != "allow" && c.Agent.Provider.DataCollection != "deny" {
-		return fmt.Errorf("invalid data_collection")
+	if c.Judge.Provider != nil {
+		if err := validateProvider(*c.Judge.Provider); err != nil {
+			return fmt.Errorf("judge provider: %w", err)
+		}
 	}
-	if c.Judge.Provider != nil && !c.Judge.Provider.RequireParameters {
-		return fmt.Errorf("judge provider require_parameters must be true")
-	}
-	if c.Judge.Provider != nil && c.Judge.Provider.DataCollection != "" && c.Judge.Provider.DataCollection != "deny" && c.Judge.Provider.DataCollection != "allow" {
-		return fmt.Errorf("invalid judge data_collection")
-	}
-	if c.Judge.Model == "" || strings.Contains(strings.ToLower(c.Judge.Model), "latest") || c.Judge.Rubric != "v1" {
+	if !validModelID(c.Judge.Model) || strings.Contains(strings.ToLower(c.Judge.Model), "latest") || c.Judge.Rubric != "v1" {
 		return fmt.Errorf("select a versioned judge and supported rubric v1")
 	}
 	if p := c.Judge.ReviewBelowConfidence; p != nil && (math.IsNaN(*p) || math.IsInf(*p, 0) || *p < 0 || *p > 1) {
@@ -364,13 +384,6 @@ func ValidateConfig(c Config) error {
 	}
 	if enabled, ok := c.Agent.Reasoning["enabled"]; ok && enabled == false && len(c.Agent.Reasoning) > 1 {
 		return fmt.Errorf("disabled reasoning conflicts with other overrides")
-	}
-	seenPins := map[string]bool{}
-	for _, pin := range c.Agent.Provider.Only {
-		if strings.TrimSpace(pin) != pin || pin == "" || seenPins[pin] {
-			return fmt.Errorf("invalid/duplicate provider pin")
-		}
-		seenPins[pin] = true
 	}
 	// Explicit reasoning overrides are preserved verbatim. Limit them to documented controls.
 	for k, v := range c.Agent.Reasoning {
