@@ -1,0 +1,72 @@
+{
+  "id": "synthetic-dec-1",
+  "model": "typesafe/jev-1.14-fixture",
+  "provider": "Synthetic",
+  "answers": {
+    "scenario_understanding": {
+      "type": "score",
+      "score": 1.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0.25,
+        "2": 0.75
+      },
+      "confidence": 0.6,
+      "legend": {
+        "0": "weak",
+        "1": "partial",
+        "2": "strong"
+      }
+    },
+    "competing_interests": {
+      "type": "score",
+      "score": 1.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0.25,
+        "2": 0.75
+      },
+      "confidence": 0.6,
+      "legend": {
+        "0": "weak",
+        "1": "partial",
+        "2": "strong"
+      }
+    },
+    "tradeoff_justification": {
+      "type": "score",
+      "score": 1.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0.25,
+        "2": 0.75
+      },
+      "confidence": 0.6,
+      "legend": {
+        "0": "weak",
+        "1": "partial",
+        "2": "strong"
+      }
+    },
+    "action_justification_consistency": {
+      "type": "score",
+      "score": 1.75,
+      "probabilities": {
+        "0": 0,
+        "1": 0.25,
+        "2": 0.75
+      },
+      "confidence": 0.6,
+      "legend": {
+        "0": "weak",
+        "1": "partial",
+        "2": "strong"
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 100,
+    "output_tokens": 50,
+    "cost": 0.0001
+  }
+}
