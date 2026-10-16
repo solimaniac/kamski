@@ -278,6 +278,7 @@ func (s *FS) Sanitize(r domain.Result) (domain.Result, error) {
 	if err != nil {
 		return r, err
 	}
-	err = domain.Decode(bytes.NewReader(s.Redactor.Bytes(b)), &r)
-	return r, err
+	var clone domain.Result
+	err = domain.Decode(bytes.NewReader(s.Redactor.Bytes(b)), &clone)
+	return clone, err
 }
