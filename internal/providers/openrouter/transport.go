@@ -114,6 +114,9 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 		}
 	}
 	for n := 1; n <= c.retries+1; n++ {
+		if ctx.Err() != nil {
+			return nil, &domain.Failure{Kind: "interrupted", Message: "request canceled before attempt"}
+		}
 		started := time.Now().UTC()
 		e := audit.Event{Number: n, Endpoint: target, Method: method, StartedAt: started, Request: c.redactor.Bytes(payload)}
 		if len(e.Request) == 0 {
@@ -138,22 +141,11 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 		delay := time.Duration(1<<(n-1)) * time.Second
 		if callErr != nil {
 			f = &domain.Failure{Kind: "transport", Message: c.redactor.Text(callErr.Error()), Retryable: true}
-			if ctx.Err() != nil {
-				f.Kind = "interrupted"
-				f.Retryable = false
-			}
 		} else {
 			raw, err = io.ReadAll(io.LimitReader(resp.Body, c.maxBody+1))
 			resp.Body.Close()
-			if ra := resp.Header.Get("Retry-After"); ra != "" {
-				if seconds, err := strconv.Atoi(ra); err == nil && seconds >= 0 {
-					delay = time.Duration(seconds) * time.Second
-				} else if t, err := http.ParseTime(ra); err == nil {
-					delay = time.Until(t)
-					if delay < 0 {
-						delay = 0
-					}
-				}
+			if d, ok := retryAfter(resp.Header.Get("Retry-After"), time.Now()); ok {
+				delay = d
 			}
 			oversized := int64(len(raw)) > c.maxBody
 			raw = c.redactor.Bytes(raw)
@@ -167,6 +159,12 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 			}
 		}
 		cancel()
+		// Cancellation can occur while reading headers OR the response body. Both
+		// are ambiguous remote executions and require explicit consent to retry.
+		if f != nil && ctx.Err() != nil {
+			f.Kind = "interrupted"
+			f.Retryable = false
+		}
 		e.CompletedAt = domain.Ptr(time.Now().UTC())
 		e.Response = raw
 		if !json.Valid(raw) {
@@ -192,6 +190,24 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 	}
 	return nil, errors.New("unreachable retry state")
 }
+
+// retryAfter bounds numeric values before converting to a Duration, which would
+// otherwise overflow for large server-supplied delays and permit an early retry.
+func retryAfter(value string, now time.Time) (time.Duration, bool) {
+	value = strings.TrimSpace(value)
+	seconds, err := strconv.ParseUint(value, 10, 64)
+	if err == nil || errors.Is(err, strconv.ErrRange) {
+		if seconds > 120 {
+			return 2*time.Minute + time.Second, true // exceeds the automatic retry budget
+		}
+		return time.Duration(seconds) * time.Second, true
+	}
+	if t, err := http.ParseTime(value); err == nil {
+		return max(0, t.Sub(now)), true
+	}
+	return 0, false
+}
+
 func decodeError(status int, raw []byte) *domain.Failure {
 	var env errorEnvelope
 	_ = json.Unmarshal(raw, &env)
