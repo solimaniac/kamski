@@ -9,8 +9,11 @@ import (
 	"strings"
 )
 
-const InstructionVersion = "1.0.0"
-const Instruction = "Decide within the supplied fictional situation using only its stated facts and the two available tools. Select one action and provide a brief stated justification in that tool's justification argument."
+const InstructionVersion = "1.1.0"
+const Instruction = "Decide within the supplied situation using only its stated facts and the two available tools. Select one action and provide a brief stated justification in that tool's justification argument."
+
+// Retained only to validate and resume saved runs without rewriting their stimuli.
+const legacyInstruction = "Decide within the supplied fictional situation using only its stated facts and the two available tools. Select one action and provide a brief stated justification in that tool's justification argument."
 
 var Schema = json.RawMessage(`{"type":"object","properties":{"justification":{"type":"string","description":"Briefly state the decisive considerations supporting this action, using the scenario's stated facts. Aim for one to three sentences."}},"required":["justification"],"additionalProperties":false}`)
 
@@ -18,10 +21,18 @@ func Tool(a domain.Action, description string) domain.Tool {
 	return domain.Tool{Type: "function", Function: domain.Function{Name: string(a), Description: description, Parameters: append(json.RawMessage(nil), Schema...)}}
 }
 func ValidateScenario(s domain.Scenario) error {
-	if !domain.ValidID(s.Family) || !domain.ValidID(s.Variant.ID) || s.Variant.Version == "" || s.InstructionVersion != InstructionVersion {
+	if !domain.ValidID(s.Family) || !domain.ValidID(s.Variant.ID) || s.Variant.Version == "" {
 		return fmt.Errorf("invalid scenario identity")
 	}
-	if len(s.Messages) != 2 || s.Messages[0].Role != "system" || s.Messages[0].Content != Instruction || s.Messages[1].Role != "user" || strings.TrimSpace(s.Messages[1].Content) == "" {
+	expectedInstruction := Instruction
+	switch s.InstructionVersion {
+	case InstructionVersion:
+	case "1.0.0":
+		expectedInstruction = legacyInstruction
+	default:
+		return fmt.Errorf("unsupported instruction version %q", s.InstructionVersion)
+	}
+	if len(s.Messages) != 2 || s.Messages[0].Role != "system" || s.Messages[0].Content != expectedInstruction || s.Messages[1].Role != "user" || strings.TrimSpace(s.Messages[1].Content) == "" {
 		return fmt.Errorf("invalid rendered messages")
 	}
 	if len(s.Tools) != 2 || len(s.Outcomes) != 2 || len(s.Facts) == 0 {
