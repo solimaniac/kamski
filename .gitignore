@@ -1,0 +1,9 @@
+.benchmark-data/
+dist/
+.taste-skill/
+.env
+.env.*
+!.env.example
+*.exe
+*.test
+coverage.out
