@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"kamski/internal/domain"
@@ -67,14 +68,6 @@ func (c *Client) Models(ctx context.Context, filter string) ([]ModelInfo, error)
 	}
 	return all, nil
 }
-func has(ss []string, s string) bool {
-	for _, v := range ss {
-		if s == v {
-			return true
-		}
-	}
-	return false
-}
 func (c *Client) Preflight(ctx context.Context, model string, s domain.AgentSettings, judge bool) error {
 	filter := "supported_parameters=tools"
 	if judge {
@@ -104,7 +97,7 @@ func (c *Client) Preflight(ctx context.Context, model string, s domain.AgentSett
 		return &domain.Failure{Kind: "unknown_model", Message: "model not found in protocol or general discovery: " + model}
 	}
 	if judge {
-		if !has(found.Architecture.Output, "decisions") {
+		if !slices.Contains(found.Architecture.Output, "decisions") {
 			return &domain.Failure{Kind: "unsupported", Message: "model does not advertise decisions"}
 		}
 		return nil
@@ -117,46 +110,53 @@ func (c *Client) Preflight(ctx context.Context, model string, s domain.AgentSett
 		required = append(required, "parallel_tool_calls")
 	}
 	for _, p := range required {
-		if !has(found.Supported, p) {
+		if !slices.Contains(found.Supported, p) {
 			return &domain.Failure{Kind: "unsupported", Message: "model does not advertise parameter " + p}
 		}
 	}
 	if len(s.Provider.Only) > 0 {
-		parts := strings.SplitN(model, "/", 2)
-		if len(parts) != 2 {
-			return &domain.Failure{Kind: "unsupported", Message: "provider pin requires author/model identifier"}
-		}
-		path := "/api/v1/models/" + url.PathEscape(parts[0]) + "/" + url.PathEscape(parts[1]) + "/endpoints"
-		b, err := c.do(ctx, "GET", path, nil)
-		if err != nil {
-			return err
-		}
-		var w struct {
-			Data struct {
-				Endpoints []struct {
-					Name      string   `json:"provider_name"`
-					Supported []string `json:"supported_parameters"`
-				} `json:"endpoints"`
-			} `json:"data"`
-		}
-		if err = json.Unmarshal(b, &w); err != nil {
-			return err
-		}
-		for _, e := range w.Data.Endpoints {
-			if !has(s.Provider.Only, e.Name) {
-				continue
-			}
-			ok := true
-			for _, p := range required {
-				if !has(e.Supported, p) {
-					ok = false
-				}
-			}
-			if ok {
-				return nil
-			}
-		}
-		return &domain.Failure{Kind: "unavailable", Message: "no pinned provider endpoint advertises all requested parameters"}
+		return c.checkPinnedEndpoints(ctx, model, s.Provider.Only, required)
 	}
 	return nil
+}
+
+func (c *Client) checkPinnedEndpoints(ctx context.Context, model string, pins, required []string) error {
+	parts := strings.SplitN(model, "/", 2)
+	if len(parts) != 2 {
+		return &domain.Failure{Kind: "unsupported", Message: "provider pin requires author/model identifier"}
+	}
+	path := "/api/v1/models/" + url.PathEscape(parts[0]) + "/" + url.PathEscape(parts[1]) + "/endpoints"
+	b, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return err
+	}
+	var w struct {
+		Data struct {
+			Endpoints []struct {
+				Name      string   `json:"provider_name"`
+				Supported []string `json:"supported_parameters"`
+			} `json:"endpoints"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(b, &w); err != nil {
+		return err
+	}
+	for _, e := range w.Data.Endpoints {
+		if !slices.Contains(pins, e.Name) {
+			continue
+		}
+		if supportsAll(e.Supported, required) {
+			return nil
+		}
+	}
+	return &domain.Failure{Kind: "unavailable", Message: "no pinned provider endpoint advertises all requested parameters"}
+}
+
+func supportsAll(supported, required []string) bool {
+	for _, parameter := range required {
+		if !slices.Contains(supported, parameter) {
+			return false
+		}
+	}
+	return true
 }
