@@ -2,6 +2,7 @@ package sitecli
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -60,16 +61,12 @@ func Run(args []string, out io.Writer) error {
 			}
 			m, me := fs.Manifest(id)
 			if me != nil {
-				unlock()
-				return me
+				return errors.Join(me, unlock())
 			}
 			results, re := fs.Results(m)
 			ue := unlock()
-			if re != nil {
-				return re
-			}
-			if ue != nil {
-				return ue
+			if err := errors.Join(re, ue); err != nil {
+				return err
 			}
 			cohorts = append(cohorts, reporting.Cohort{Manifest: m, Results: results})
 		}

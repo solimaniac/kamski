@@ -184,7 +184,7 @@ func ReadJSON(path string, v any) error {
 	}
 	return err
 }
-func (s *FS) Create(m domain.Manifest) error {
+func (s *FS) Create(m domain.Manifest) (err error) {
 	if err := protocol.ValidateManifest(m); err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (s *FS) Create(m domain.Manifest) error {
 	if err != nil {
 		return err
 	}
-	defer unlock()
+	defer func() { err = errors.Join(err, unlock()) }()
 	for _, r := range m.Plan {
 		if err = s.Save(r); err != nil {
 			return err
@@ -309,8 +309,7 @@ func (s *FS) Lock(id string) (func() error, error) {
 	_, err = fmt.Fprintf(f, "pid=%d\ncreated=%s\n", os.Getpid(), time.Now().UTC().Format(time.RFC3339))
 	ce := f.Close()
 	if err != nil || ce != nil {
-		os.Remove(p)
-		return nil, fmt.Errorf("write lock failed")
+		return nil, fmt.Errorf("write lock: %w", errors.Join(err, ce, os.Remove(p)))
 	}
 	return func() error { return os.Remove(p) }, nil
 }

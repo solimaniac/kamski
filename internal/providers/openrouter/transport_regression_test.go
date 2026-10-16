@@ -14,6 +14,23 @@ import (
 	"kamski/internal/domain"
 )
 
+func TestTimeoutHasLosslessRecordedPrecision(t *testing.T) {
+	for _, timeout := range []time.Duration{time.Nanosecond, time.Microsecond, 1500 * time.Microsecond, 10*time.Minute + time.Millisecond} {
+		if _, err := New(Options{Timeout: timeout}); err == nil {
+			t.Fatalf("accepted unrecordable timeout %s", timeout)
+		}
+	}
+	for _, timeout := range []time.Duration{time.Millisecond, 1500 * time.Millisecond, 10 * time.Minute} {
+		c, err := New(Options{Timeout: timeout})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := time.Duration(c.Settings().TimeoutMS) * time.Millisecond; got != timeout {
+			t.Fatalf("recorded timeout %s differs from %s", got, timeout)
+		}
+	}
+}
+
 func TestRetryAfterBounds(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	for _, tt := range []struct {

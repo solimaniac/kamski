@@ -59,8 +59,8 @@ func New(o Options) (*Client, error) {
 	if o.Timeout == 0 {
 		o.Timeout = 90 * time.Second
 	}
-	if o.Timeout <= 0 || o.Timeout > 10*time.Minute {
-		return nil, fmt.Errorf("timeout must be >0 and <=10m")
+	if o.Timeout < time.Millisecond || o.Timeout > 10*time.Minute || o.Timeout%time.Millisecond != 0 {
+		return nil, fmt.Errorf("timeout must be 1ms..10m in whole milliseconds")
 	}
 	if o.MaxBody == 0 {
 		o.MaxBody = 8 << 20

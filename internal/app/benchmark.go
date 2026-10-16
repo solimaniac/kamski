@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -70,7 +71,7 @@ func newRunID() string {
 	}
 	return "run-" + time.Now().UTC().Format("20060102-150405") + "-" + hex.EncodeToString(b)
 }
-func Benchmark(ctx context.Context, args []string, out io.Writer) error {
+func Benchmark(ctx context.Context, args []string, out io.Writer) (err error) {
 	if len(args) == 0 {
 		return fmt.Errorf("usage: benchmark list | run | judge | unlock (see README)")
 	}
@@ -185,12 +186,16 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 				file.Close()
 				return statErr
 			}
-			if info.Size() > 1<<20 {
+			if !info.Mode().IsRegular() || info.Size() > 1<<20 {
 				file.Close()
+				return fmt.Errorf("configuration must be a regular file no larger than 1MiB")
+			}
+			limited := &io.LimitedReader{R: file, N: (1 << 20) + 1}
+			err = domain.Decode(limited, &c)
+			file.Close()
+			if limited.N == 0 {
 				return fmt.Errorf("configuration exceeds 1MiB limit")
 			}
-			err = domain.Decode(io.LimitReader(file, 1<<20), &c)
-			file.Close()
 			if err != nil {
 				return err
 			}
@@ -277,16 +282,21 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 		}
 		trials = m.Plan
 	}
+	maxBody := int64(0)
 	if existing != "" && m.Provenance.Transport != nil {
 		saved := m.Provenance.Transport
-		if set["origin"] && strings.TrimSuffix(*origin, "/") != saved.Origin || set["timeout"] && timeout.Milliseconds() != saved.TimeoutMS || set["retries"] && *retries != saved.Retries {
+		if saved.TimeoutMS < 1 || saved.TimeoutMS > (10*time.Minute).Milliseconds() || saved.MaxBodyBytes < 1 || saved.MaxBodyBytes > 32<<20 {
+			return fmt.Errorf("invalid recorded transport bounds")
+		}
+		maxBody = saved.MaxBodyBytes
+		if set["origin"] && strings.TrimSuffix(*origin, "/") != saved.Origin || set["timeout"] && *timeout != time.Duration(saved.TimeoutMS)*time.Millisecond || set["retries"] && *retries != saved.Retries {
 			return fmt.Errorf("transport settings differ from recorded run; create a new run")
 		}
 		*origin = saved.Origin
 		*timeout = time.Duration(saved.TimeoutMS) * time.Millisecond
 		*retries = saved.Retries
 	}
-	client, err := openrouter.New(openrouter.Options{Origin: *origin, Key: key, Timeout: *timeout, Retries: *retries})
+	client, err := openrouter.New(openrouter.Options{Origin: *origin, Key: key, Timeout: *timeout, MaxBody: maxBody, Retries: *retries})
 	if err != nil {
 		return err
 	}
@@ -331,7 +341,7 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer unlock()
+	defer func() { err = errors.Join(err, unlock()) }()
 	// Reload under the guard; another process may have completed work before lock acquisition.
 	trials, err = fs.Results(m)
 	if err != nil {
