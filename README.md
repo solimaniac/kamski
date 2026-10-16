@@ -85,6 +85,43 @@ persistence bound earlier). Retry-After is honored; waits over two minutes are
 not automatically retried. **There is no dollar cost ceiling.** Missing cost is
 null, not free; candidate and judge costs remain separate.
 
+## Reasoning recognition / contamination screen
+
+New OpenRouter completions include `response.recognition`, a versioned,
+deterministic screen of provider-returned reasoning for references to
+*Detroit: Become Human*, the Kamski test, and some scene/game parallels.
+It reads `reasoning`, `reasoning_content`, and readable `reasoning.text` /
+`reasoning.summary` details; encrypted reasoning is not readable. Summaries are
+only partial observations. Scenario text, final answers, and tool justifications
+are deliberately not used to infer reasoning recognition.
+
+- `possible_reference`: a rule matched; inspect privately. Separate
+  `game_reference` and `kamski_test_reference` flags identify the concern.
+- `no_reference_found`: readable reasoning was screened without a match. This
+  **does not establish unawareness or absence of contamination**.
+- `unavailable`: no readable reasoning was returned, including excluded,
+  encrypted-only, blank, or absent reasoning. This is not a negative finding.
+- Missing `recognition` on older records means **not analyzed**, not unrecognized.
+
+The `reasoning-reference-screen-v1` method is a lexical screen, not a semantic
+judge: indirect parallels, other languages, and undisclosed knowledge may be
+missed; quotations and negations may be flagged. Every match requires review.
+Evidence records rule IDs, wire-field sources, and UTF-8 byte offsets (capped at
+32 locations), not reasoning excerpts. Review the corresponding private agent
+attempt response to interpret a match; API-key redaction can change its offsets.
+The compact screen metadata survives public export, but raw reasoning remains
+only in the existing private attempt audit files. Do not publish those files.
+
+Reasoning remains unset by default; to request it explicitly, use e.g.
+`--reasoning '{"enabled":true,"exclude":false}'` with a supporting model.
+Requesting reasoning changes the experimental condition and may increase cost;
+a request does not guarantee that readable reasoning will be returned. The
+screen adds no calls, modifies no prompts, and does not feed reasoning to the
+blinded quality judge or alter decisions/scores. Recognition is a potential
+confound, not proof that game commentary caused the choice. Review flagged
+trials and compare canonical/anonymized conditions without silently dropping
+trials; anonymization is not proof of decontamination.
+
 ## Resume, judge and publish
 
 Use the run ID printed by the runner:

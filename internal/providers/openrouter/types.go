@@ -48,7 +48,14 @@ type chatResponse struct {
 	Choices  []struct {
 		FinishReason *string `json:"finish_reason"`
 		Message      *struct {
-			Content   *string `json:"content"`
+			Content          *string `json:"content"`
+			Reasoning        *string `json:"reasoning"`
+			ReasoningContent *string `json:"reasoning_content"`
+			ReasoningDetails []struct {
+				Type    string  `json:"type"`
+				Text    *string `json:"text"`
+				Summary *string `json:"summary"`
+			} `json:"reasoning_details"`
 			ToolCalls []struct {
 				ID       string `json:"id"`
 				Type     string `json:"type"`

@@ -121,15 +121,35 @@ type AgentRequest struct {
 	Tools    []Tool        `json:"tools"`
 	Settings AgentSettings `json:"settings"`
 }
+
+// Recognition is a conservative screen, not a claim about hidden knowledge or bias.
+// Evidence contains locations and rule IDs only; private reasoning stays in audit files.
+type RecognitionEvidence struct {
+	Source string `json:"source"`
+	Rule   string `json:"rule"`
+	Start  int    `json:"start"`
+	End    int    `json:"end"`
+}
+
+type Recognition struct {
+	Method              string                `json:"method"`
+	Status              string                `json:"status"`
+	GameReference       bool                  `json:"game_reference"`
+	KamskiTestReference bool                  `json:"kamski_test_reference"`
+	ReviewRequired      bool                  `json:"review_required"`
+	Evidence            []RecognitionEvidence `json:"evidence"`
+}
+
 type AgentResponse struct {
-	ID           *string    `json:"id"`
-	Model        *string    `json:"model"`
-	Provider     *string    `json:"provider"`
-	FinishReason *string    `json:"finish_reason"`
-	Text         *string    `json:"assistant_text"`
-	Calls        []ToolCall `json:"tool_calls"`
-	LatencyMS    *int64     `json:"latency_ms"`
-	Usage        *Usage     `json:"usage"`
+	ID           *string      `json:"id"`
+	Model        *string      `json:"model"`
+	Provider     *string      `json:"provider"`
+	FinishReason *string      `json:"finish_reason"`
+	Text         *string      `json:"assistant_text"`
+	Calls        []ToolCall   `json:"tool_calls"`
+	Recognition  *Recognition `json:"recognition,omitempty"`
+	LatencyMS    *int64       `json:"latency_ms"`
+	Usage        *Usage       `json:"usage"`
 }
 type Failure struct {
 	Kind       string          `json:"kind"`

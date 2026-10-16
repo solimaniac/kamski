@@ -3,7 +3,9 @@ package openrouter
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"kamski/internal/domain"
+	"kamski/internal/recognition"
 	"time"
 )
 
@@ -26,6 +28,23 @@ func (c *Client) Complete(ctx context.Context, r domain.AgentRequest) (domain.Ag
 		return domain.AgentResponse{}, &domain.Failure{Kind: "protocol_error", Message: "chat response missing assistant message"}
 	}
 	out := domain.AgentResponse{ID: w.ID, Model: w.Model, Provider: w.Provider, FinishReason: ch.FinishReason, Text: ch.Message.Content, LatencyMS: domain.Ptr(time.Since(start).Milliseconds()), Usage: w.Usage.domain(), Calls: []domain.ToolCall{}}
+	segments := []recognition.Segment{}
+	add := func(source string, value *string) {
+		if value != nil {
+			segments = append(segments, recognition.Segment{Source: source, Text: *value})
+		}
+	}
+	add("reasoning", ch.Message.Reasoning)
+	add("reasoning_content", ch.Message.ReasoningContent)
+	for i, detail := range ch.Message.ReasoningDetails {
+		switch detail.Type {
+		case "reasoning.text":
+			add(fmt.Sprintf("reasoning_details[%d].text", i), detail.Text)
+		case "reasoning.summary":
+			add(fmt.Sprintf("reasoning_details[%d].summary", i), detail.Summary)
+		}
+	}
+	out.Recognition = recognition.Analyze(segments)
 	for _, t := range ch.Message.ToolCalls {
 		out.Calls = append(out.Calls, domain.ToolCall{ID: t.ID, Type: t.Type, Name: t.Function.Name, Arguments: t.Function.Arguments})
 	}
