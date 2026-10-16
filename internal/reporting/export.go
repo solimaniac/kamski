@@ -3,13 +3,14 @@ package reporting
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"sort"
+	"time"
+
 	"kamski/internal/domain"
 	"kamski/internal/protocol"
 	"kamski/internal/rubrics"
 	"kamski/internal/safety"
-	"math"
-	"sort"
-	"time"
 )
 
 func privateError(e *domain.Failure) *domain.Failure {

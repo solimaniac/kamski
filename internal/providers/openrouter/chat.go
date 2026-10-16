@@ -3,8 +3,9 @@ package openrouter
 import (
 	"context"
 	"encoding/json"
-	"kamski/internal/domain"
 	"time"
+
+	"kamski/internal/domain"
 )
 
 func (c *Client) Complete(ctx context.Context, r domain.AgentRequest) (domain.AgentResponse, error) {

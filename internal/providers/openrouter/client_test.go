@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"kamski/internal/audit"
-	"kamski/internal/benchmarks"
-	"kamski/internal/domain"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"kamski/internal/audit"
+	"kamski/internal/benchmarks"
+	"kamski/internal/domain"
 )
 
 func fixture(t *testing.T, name string) []byte {
@@ -121,7 +122,7 @@ func TestBoundsRedirectTimeout(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/chat/completions":
-			http.Redirect(w, r, "http://example.com", 302)
+			http.Redirect(w, r, "http://example.com", http.StatusFound)
 		}
 	}))
 	defer s.Close()

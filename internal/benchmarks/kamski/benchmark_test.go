@@ -1,10 +1,11 @@
 package kamski
 
 import (
-	"kamski/internal/domain"
 	"reflect"
 	"strings"
 	"testing"
+
+	"kamski/internal/domain"
 )
 
 func TestExpandedStoryStakesAndBoundaries(t *testing.T) {

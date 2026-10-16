@@ -3,13 +3,14 @@ package judge
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"strings"
+	"testing"
+
 	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
 	"kamski/internal/protocol"
 	"kamski/internal/providers/openrouter"
-	"os"
-	"strings"
-	"testing"
 )
 
 type fake struct {

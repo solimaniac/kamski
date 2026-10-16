@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"kamski/internal/app"
-	"kamski/internal/safety"
 	"os"
 	"os/signal"
 	"strings"
+
+	"kamski/internal/app"
+	"kamski/internal/safety"
 )
 
 func main() {

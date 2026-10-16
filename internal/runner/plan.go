@@ -2,9 +2,10 @@ package runner
 
 import (
 	"fmt"
+	"time"
+
 	"kamski/internal/domain"
 	"kamski/internal/protocol"
-	"time"
 )
 
 type Builder interface {

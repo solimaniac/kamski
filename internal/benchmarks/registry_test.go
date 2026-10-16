@@ -2,12 +2,13 @@ package benchmarks
 
 import (
 	"encoding/json"
-	"kamski/internal/benchmarks/kamski"
-	"kamski/internal/protocol"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"kamski/internal/benchmarks/kamski"
+	"kamski/internal/protocol"
 )
 
 func TestVariantsAndGoldens(t *testing.T) {

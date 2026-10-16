@@ -4,8 +4,9 @@ package audit
 import (
 	"context"
 	"encoding/json"
-	"kamski/internal/domain"
 	"time"
+
+	"kamski/internal/domain"
 )
 
 type Event struct {

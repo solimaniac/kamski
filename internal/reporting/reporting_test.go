@@ -2,12 +2,13 @@ package reporting
 
 import (
 	"encoding/json"
-	"kamski/internal/domain"
-	"kamski/internal/protocol"
-	"kamski/internal/safety"
 	"os"
 	"strings"
 	"testing"
+
+	"kamski/internal/domain"
+	"kamski/internal/protocol"
+	"kamski/internal/safety"
 )
 
 func load(t *testing.T, name string) domain.Result {

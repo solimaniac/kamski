@@ -1,11 +1,12 @@
 package workermemory
 
 import (
-	"kamski/internal/benchmarks/assets"
-	"kamski/internal/domain"
 	"reflect"
 	"strings"
 	"testing"
+
+	"kamski/internal/benchmarks/assets"
+	"kamski/internal/domain"
 )
 
 func TestExpandedContextPreservesBaselineStakes(t *testing.T) {

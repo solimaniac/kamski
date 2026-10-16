@@ -6,13 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"kamski/internal/reporting"
 	"kamski/internal/safety"
 	"kamski/internal/site"
 	"kamski/internal/storage"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func Run(args []string, out io.Writer) error {

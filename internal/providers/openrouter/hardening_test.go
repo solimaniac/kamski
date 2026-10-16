@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"kamski/internal/audit"
-	"kamski/internal/domain"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"kamski/internal/audit"
+	"kamski/internal/domain"
 )
 
 func TestRetryAfterAndMalformedRawRetention(t *testing.T) {

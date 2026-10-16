@@ -2,6 +2,7 @@ package workermemory
 
 import (
 	"embed"
+
 	"kamski/internal/benchmarks/assets"
 )
 

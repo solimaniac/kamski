@@ -2,9 +2,10 @@
 package reporting
 
 import (
-	"kamski/internal/domain"
 	"math"
 	"sort"
+
+	"kamski/internal/domain"
 )
 
 type Counts struct {

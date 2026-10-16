@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"kamski/internal/domain"
-	"kamski/internal/protocol"
 	"sort"
 	"strings"
 	"text/template"
+
+	"kamski/internal/domain"
+	"kamski/internal/protocol"
 )
 
 type ActionData struct {

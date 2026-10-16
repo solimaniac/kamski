@@ -4,15 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/santhosh-tekuri/jsonschema/v5"
-	"kamski/internal/benchmarks"
-	"kamski/internal/domain"
-	"kamski/internal/judge"
-	"kamski/internal/providers/openrouter"
-	"kamski/internal/reporting"
-	"kamski/internal/runner"
-	"kamski/internal/safety"
-	"kamski/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +12,17 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/santhosh-tekuri/jsonschema/v5"
+
+	"kamski/internal/benchmarks"
+	"kamski/internal/domain"
+	"kamski/internal/judge"
+	"kamski/internal/providers/openrouter"
+	"kamski/internal/reporting"
+	"kamski/internal/runner"
+	"kamski/internal/safety"
+	"kamski/internal/storage"
 )
 
 func plan(t *testing.T, reps int) domain.Manifest {

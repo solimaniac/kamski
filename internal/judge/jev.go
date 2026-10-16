@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+
 	"kamski/internal/domain"
 	"kamski/internal/protocol"
 	"kamski/internal/providers/openrouter"
-	"math"
 )
 
 type DecisionsClient interface {

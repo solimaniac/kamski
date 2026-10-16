@@ -7,16 +7,17 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
 	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
 	"kamski/internal/reporting"
 	"kamski/internal/rubrics"
 	"kamski/internal/storage"
 	"kamski/web"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
 )
 
 const marker = "Kamski Bench generated artifact v1\n"

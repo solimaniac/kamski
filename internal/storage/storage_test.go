@@ -2,13 +2,14 @@ package storage
 
 import (
 	"encoding/json"
-	"kamski/internal/domain"
-	"kamski/internal/safety"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
+
+	"kamski/internal/domain"
+	"kamski/internal/safety"
 )
 
 func TestAtomicAndSafePaths(t *testing.T) {

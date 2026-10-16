@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"kamski/internal/domain"
 	"net/url"
 	"strings"
+
+	"kamski/internal/domain"
 )
 
 type ModelInfo struct {

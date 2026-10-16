@@ -7,10 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"kamski/internal/audit"
-	"kamski/internal/domain"
-	"kamski/internal/protocol"
-	"kamski/internal/safety"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,6 +14,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"kamski/internal/audit"
+	"kamski/internal/domain"
+	"kamski/internal/protocol"
+	"kamski/internal/safety"
 )
 
 type FS struct {

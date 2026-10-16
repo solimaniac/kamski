@@ -3,14 +3,16 @@ package sitecli
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/santhosh-tekuri/jsonschema/v5"
-	"kamski/internal/domain"
-	"kamski/internal/safety"
-	"kamski/internal/storage"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/santhosh-tekuri/jsonschema/v5"
+
+	"kamski/internal/domain"
+	"kamski/internal/safety"
+	"kamski/internal/storage"
 )
 
 func TestUpdateWholeCohortAndOfflineBuild(t *testing.T) {

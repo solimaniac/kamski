@@ -2,9 +2,10 @@ package assets
 
 import (
 	"encoding/json"
-	"kamski/internal/domain"
 	"testing"
 	"testing/fstest"
+
+	"kamski/internal/domain"
 )
 
 func TestLoadWithSharedTemplate(t *testing.T) {

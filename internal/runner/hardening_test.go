@@ -3,13 +3,14 @@ package runner_test
 import (
 	"context"
 	"errors"
+	"sync/atomic"
+	"testing"
+	"time"
+
 	"kamski/internal/domain"
 	"kamski/internal/runner"
 	"kamski/internal/safety"
 	"kamski/internal/storage"
-	"sync/atomic"
-	"testing"
-	"time"
 )
 
 type fakeAgent struct {

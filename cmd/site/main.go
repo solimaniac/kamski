@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"kamski/internal/app/sitecli"
 	"kamski/internal/safety"
-	"os"
 )
 
 func main() {

@@ -1,8 +1,9 @@
 package protocol
 
 import (
-	"kamski/internal/domain"
 	"testing"
+
+	"kamski/internal/domain"
 )
 
 func TestNormalize(t *testing.T) {

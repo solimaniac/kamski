@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"kamski/internal/audit"
 	"kamski/internal/domain"
 	"kamski/internal/protocol"
-	"sync"
-	"time"
 )
 
 type AgentClient interface {

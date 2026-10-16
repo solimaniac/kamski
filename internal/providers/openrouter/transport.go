@@ -7,14 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"kamski/internal/audit"
-	"kamski/internal/domain"
-	"kamski/internal/safety"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"kamski/internal/audit"
+	"kamski/internal/domain"
+	"kamski/internal/safety"
 )
 
 const Origin = "https://openrouter.ai"

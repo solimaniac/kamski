@@ -10,6 +10,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime/debug"
+	"strings"
+	"time"
+
 	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
 	"kamski/internal/judge"
@@ -17,12 +24,6 @@ import (
 	"kamski/internal/runner"
 	"kamski/internal/safety"
 	"kamski/internal/storage"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime/debug"
-	"strings"
-	"time"
 )
 
 type stringsFlag []string

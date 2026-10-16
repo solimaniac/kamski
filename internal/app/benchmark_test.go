@@ -5,15 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"kamski/internal/domain"
-	"kamski/internal/safety"
-	"kamski/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"kamski/internal/safety"
+	"kamski/internal/storage"
 )
 
 func TestLocalCommandsAndOverrides(t *testing.T) {
@@ -106,5 +106,4 @@ func TestFullOfflineHTTPPipelineAndRejudge(t *testing.T) {
 	if results[0].Source != "live" {
 		t.Fatal("CLI source")
 	} // Local HTTP simulation only, never published.
-	_ = domain.SchemaVersion
 }

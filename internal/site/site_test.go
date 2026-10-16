@@ -2,14 +2,15 @@ package site
 
 import (
 	"encoding/json"
-	"kamski/internal/domain"
-	"kamski/internal/reporting"
-	"kamski/internal/safety"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	"kamski/internal/domain"
+	"kamski/internal/reporting"
+	"kamski/internal/safety"
 )
 
 func TestOfflineDeterministicHostileAndPartial(t *testing.T) {

@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"kamski/internal/domain"
 	"strings"
+
+	"kamski/internal/domain"
 )
 
 const InstructionVersion = "1.1.0"

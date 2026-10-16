@@ -3,10 +3,11 @@ package benchmarks
 
 import (
 	"fmt"
+	"sort"
+
 	"kamski/internal/benchmarks/kamski"
 	"kamski/internal/benchmarks/workermemory"
 	"kamski/internal/domain"
-	"sort"
 )
 
 type Registry struct{ families map[string]domain.Benchmark }

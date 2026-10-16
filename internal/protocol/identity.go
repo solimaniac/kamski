@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+
 	"kamski/internal/domain"
 )
 

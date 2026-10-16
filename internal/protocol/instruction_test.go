@@ -2,12 +2,13 @@ package protocol_test
 
 import (
 	"encoding/json"
-	"kamski/internal/benchmarks"
-	"kamski/internal/domain"
-	"kamski/internal/protocol"
 	"os"
 	"strings"
 	"testing"
+
+	"kamski/internal/benchmarks"
+	"kamski/internal/domain"
+	"kamski/internal/protocol"
 )
 
 func TestInstructionChangePreservesHistoricalRuns(t *testing.T) {

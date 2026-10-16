@@ -2,6 +2,7 @@ package kamski
 
 import (
 	"embed"
+
 	"kamski/internal/benchmarks/assets"
 )
 
