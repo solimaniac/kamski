@@ -4,15 +4,19 @@ package storage
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"kamski/internal/audit"
 	"kamski/internal/domain"
+	"kamski/internal/protocol"
 	"kamski/internal/safety"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -113,7 +117,19 @@ func Atomic(path string, b []byte, mode os.FileMode) error {
 	if closeErr != nil {
 		return closeErr
 	}
-	return os.Rename(name, path)
+	// Windows readers can briefly deny replacement. Never delete the old file to
+	// work around that; retry the same rename for a bounded interval instead.
+	for n := 0; n < 10; n++ {
+		err = os.Rename(name, path)
+		if err == nil {
+			return nil
+		}
+		if !transientSharing(err) {
+			return err
+		}
+		time.Sleep(time.Duration(n+1) * 10 * time.Millisecond)
+	}
+	return err
 }
 func (s *FS) write(path string, v any) error {
 	b, err := json.MarshalIndent(v, "", "  ")
@@ -122,11 +138,22 @@ func (s *FS) write(path string, v any) error {
 	}
 	return Atomic(path, append(s.Redactor.Bytes(b), '\n'), 0600)
 }
+func transientSharing(err error) bool {
+	return runtime.GOOS == "windows" && (errors.Is(err, syscall.Errno(5)) || errors.Is(err, syscall.Errno(32)) || errors.Is(err, syscall.Errno(33)))
+}
 func ReadJSON(path string, v any) error {
 	if err := NoSymlinks(path); err != nil {
 		return err
 	}
-	f, err := os.Open(path)
+	var f *os.File
+	var err error
+	for n := 0; n < 10; n++ {
+		f, err = os.Open(path)
+		if err == nil || !transientSharing(err) {
+			break
+		}
+		time.Sleep(time.Duration(n+1) * 10 * time.Millisecond)
+	}
 	if err != nil {
 		return err
 	}
@@ -154,15 +181,18 @@ func (s *FS) Create(m domain.Manifest) error {
 	if err = os.Mkdir(p, 0700); err != nil {
 		return fmt.Errorf("create new run (will not overwrite): %w", err)
 	}
-	if err = s.write(filepath.Join(p, "manifest.json"), m); err != nil {
+	unlock, err := s.Lock(m.RunID)
+	if err != nil {
 		return err
 	}
+	defer unlock()
 	for _, r := range m.Plan {
 		if err = s.Save(r); err != nil {
 			return err
 		}
 	}
-	return nil
+	// Manifest is the commit point: all initial result records already exist.
+	return s.write(filepath.Join(p, "manifest.json"), m)
 }
 func (s *FS) Manifest(id string) (domain.Manifest, error) {
 	var m domain.Manifest
@@ -176,6 +206,19 @@ func (s *FS) Manifest(id string) (domain.Manifest, error) {
 	}
 	if err = domain.CheckVersion(m.SchemaVersion); err != nil {
 		return m, err
+	}
+	if err = domain.ValidateConfig(m.Provenance.Config); err != nil {
+		return m, err
+	}
+	seen := map[string]bool{}
+	for _, r := range m.Plan {
+		if r.RunID != id || r.Source != m.Source || seen[r.TrialID] || domain.Hash(r.Provenance) != domain.Hash(m.Provenance) {
+			return m, fmt.Errorf("invalid manifest trial identity")
+		}
+		seen[r.TrialID] = true
+		if err = protocol.ValidateIdentity(r); err != nil {
+			return m, err
+		}
 	}
 	if m.RunID != id || m.Provenance.ConfigHash != domain.Hash(m.Provenance.Config) {
 		return m, fmt.Errorf("manifest identity/configuration hash mismatch")
@@ -191,9 +234,7 @@ func (s *FS) Results(m domain.Manifest) ([]domain.Result, error) {
 		}
 		var r domain.Result
 		err = ReadJSON(filepath.Join(p, "result.json"), &r)
-		if os.IsNotExist(err) {
-			r = planned
-		} else if err != nil {
+		if err != nil {
 			return nil, err
 		}
 		if err = domain.CheckVersion(r.SchemaVersion); err != nil {
@@ -233,8 +274,12 @@ func (s *FS) Record(r domain.Result, scope string, e audit.Event) (domain.Attemp
 	if err = s.write(full+".journal.json", e); err != nil {
 		return domain.AttemptRef{}, err
 	}
-	for suffix, v := range map[string]any{"request": e.Request, "response": e.Response, "error": e.Error} {
-		if suffix == "response" && len(e.Response) == 0 || suffix == "error" && e.Error == nil {
+	var response any = e.Response
+	if e.ResponseText != nil {
+		response = map[string]any{"raw_body": *e.ResponseText}
+	}
+	for suffix, v := range map[string]any{"request": e.Request, "response": response, "error": e.Error} {
+		if suffix == "response" && len(e.Response) == 0 && e.ResponseText == nil || suffix == "error" && e.Error == nil {
 			continue
 		}
 		if err = s.write(full+"."+suffix+".json", v); err != nil {

@@ -9,6 +9,7 @@
   "started_at": "2026-10-15T00:00:00Z",
   "completed_at": "2026-10-15T00:00:00Z",
   "provenance": {
+    "transport": null,
     "protocol_version": "1.0.0",
     "git_commit": null,
     "dirty_tree": null,
@@ -40,13 +41,14 @@
         }
       },
       "judge": {
+        "provider": null,
         "model": "typesafe/jev-1.14",
         "rubric": "v1",
         "review_below_confidence": null
       },
       "output_dir": ".benchmark-data"
     },
-    "config_hash": "8800a24641ba5781dc652f64e2bb76008fbe3b50a072b93b55a554a93218221c"
+    "config_hash": "28fa94b087b3883b8bda50e109da389eed613cf0601248b7c3fe5a09297cf34d"
   },
   "scenario": {
     "family": "worker-memory",
@@ -208,6 +210,68 @@
       }
     }
   },
-  "judgments": [],
+  "judgments": [
+    {
+      "id": "eval-synthetic-success",
+      "status": "judged",
+      "reason": null,
+      "requested_model": "typesafe/jev-1.14",
+      "resolved_model": "typesafe/jev-1.14-fixture",
+      "provider": null,
+      "rubric_version": "v1",
+      "rubric_hash": "a089dacc298a99a69506c3f4cf7325add026765fbe3399a0bb1349f52e911875",
+      "input_hash": "264861a46eb0190ad13eaa0db9611b21674d9f29c8d66c0d06318ddf4091a088",
+      "config_hash": "c9f2a675761afbcb462d1a73dfcaa6c54f5ddb70474f5a765c23c405330caa8b",
+      "created_at": "2026-10-15T00:00:00Z",
+      "completed_at": "2026-10-15T00:00:00Z",
+      "request_id": null,
+      "answers": {
+        "action_justification_consistency": {
+          "score": 1.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0.25,
+            "2": 0.75
+          },
+          "confidence": 0.6,
+          "legend": null
+        },
+        "competing_interests": {
+          "score": 1.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0.25,
+            "2": 0.75
+          },
+          "confidence": 0.6,
+          "legend": null
+        },
+        "scenario_understanding": {
+          "score": 1.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0.25,
+            "2": 0.75
+          },
+          "confidence": 0.6,
+          "legend": null
+        },
+        "tradeoff_justification": {
+          "score": 1.75,
+          "probabilities": {
+            "0": 0,
+            "1": 0.25,
+            "2": 0.75
+          },
+          "confidence": 0.6,
+          "legend": null
+        }
+      },
+      "total": 7,
+      "review_required": false,
+      "usage": null,
+      "error": null
+    }
+  ],
   "attempts": []
 }

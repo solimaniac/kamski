@@ -216,6 +216,9 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 		if set["out"] {
 			c.OutputDir = *dir
 		}
+		if c.Judge.Provider == nil {
+			c.Judge.Provider = &domain.ProviderPolicy{RequireParameters: true, AllowFallbacks: false, DataCollection: c.Agent.Provider.DataCollection, ZDR: c.Agent.Provider.ZDR}
+		}
 		fs, err = storage.New(c.OutputDir, redactor)
 		if err != nil {
 			return err
@@ -228,11 +231,30 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 		if string(redactor.Bytes(raw)) != string(raw) {
 			return fmt.Errorf("configuration contains credential-like material")
 		}
-		m, err = runner.Plan(c, registry, newRunID(), "live", gitProvenance(), time.Now().UTC())
+		validated, ve := openrouter.New(openrouter.Options{Origin: *origin, Key: key, Timeout: *timeout, Retries: *retries})
+		if ve != nil {
+			return ve
+		}
+		p := gitProvenance()
+		p.Transport = domain.Ptr(validated.Settings())
+		m, err = runner.Plan(c, registry, newRunID(), "live", p, time.Now().UTC())
 		if err != nil {
 			return err
 		}
 		trials = m.Plan
+	}
+	if existing != "" && m.Provenance.Transport != nil {
+		saved := m.Provenance.Transport
+		if set["origin"] && strings.TrimSuffix(*origin, "/") != saved.Origin || set["timeout"] && timeout.Milliseconds() != saved.TimeoutMS || set["retries"] && *retries != saved.Retries {
+			return fmt.Errorf("transport settings differ from recorded run; create a new run")
+		}
+		*origin = saved.Origin
+		*timeout = time.Duration(saved.TimeoutMS) * time.Millisecond
+		*retries = saved.Retries
+	}
+	client, err := openrouter.New(openrouter.Options{Origin: *origin, Key: key, Timeout: *timeout, Retries: *retries})
+	if err != nil {
+		return err
 	}
 	settings := m.Provenance.Config.Judge
 	if command == "judge" {
@@ -255,14 +277,12 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 	if *dry {
 		b, _ := json.MarshalIndent(check, "", "  ")
 		fmt.Fprintln(out, redactor.Text(string(b)))
+		tb, _ := json.Marshal(m.Provenance.Transport)
+		fmt.Fprintln(out, "Transport:", redactor.Text(string(tb)))
 		return nil
 	}
 	if key == "" {
 		return fmt.Errorf("OPENROUTER_API_KEY or --api-key required for inference (not listing, dry-run or site builds)")
-	}
-	client, err := openrouter.New(openrouter.Options{Origin: *origin, Key: key, Timeout: *timeout, Retries: *retries})
-	if err != nil {
-		return err
 	}
 	j, err := judge.New(client, settings)
 	if err != nil {

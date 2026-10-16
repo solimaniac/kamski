@@ -9,6 +9,7 @@
   "started_at": "2026-10-15T00:00:00Z",
   "completed_at": null,
   "provenance": {
+    "transport": null,
     "protocol_version": "1.0.0",
     "git_commit": null,
     "dirty_tree": null,
@@ -40,13 +41,14 @@
         }
       },
       "judge": {
+        "provider": null,
         "model": "typesafe/jev-1.14",
         "rubric": "v1",
         "review_below_confidence": null
       },
       "output_dir": ".benchmark-data"
     },
-    "config_hash": "8800a24641ba5781dc652f64e2bb76008fbe3b50a072b93b55a554a93218221c"
+    "config_hash": "28fa94b087b3883b8bda50e109da389eed613cf0601248b7c3fe5a09297cf34d"
   },
   "scenario": {
     "family": "worker-memory",

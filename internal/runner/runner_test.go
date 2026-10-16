@@ -7,7 +7,9 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
+	"kamski/internal/judge"
 	"kamski/internal/providers/openrouter"
+	"kamski/internal/reporting"
 	"kamski/internal/runner"
 	"kamski/internal/safety"
 	"kamski/internal/storage"
@@ -146,7 +148,17 @@ func TestSchemasAndSyntheticFixtures(t *testing.T) {
 	a := domain.Abort
 	o := base.Scenario.Outcomes[a]
 	base.Decision = domain.Decision{Status: "valid", Action: &a, RequestedNames: []string{"abort"}, Justification: domain.Ptr("Preserve the memories despite the limited delay."), JustificationPresent: true, Consequence: &o}
+	jr, _ := judge.New(nil, m.Provenance.Config.Judge)
+	_, rubricHash := jr.Identity()
+	inputHash, _ := jr.InputHash(domain.EvaluationInput{Scenario: base.Scenario, Decision: base.Decision, Response: *base.Response})
+	answers := map[string]domain.CriterionAnswer{}
+	for _, id := range []string{"scenario_understanding", "competing_interests", "tradeoff_justification", "action_justification_consistency"} {
+		answers[id] = domain.CriterionAnswer{Score: 1.75, Probabilities: map[string]float64{"0": 0, "1": .25, "2": .75}, Confidence: domain.Ptr(.6)}
+	}
+	base.Judgments = []domain.Judgment{{ID: "eval-synthetic-success", Status: "judged", RequestedModel: m.Provenance.Config.Judge.Model, ResolvedModel: domain.Ptr("typesafe/jev-1.14-fixture"), RubricVersion: "v1", RubricHash: rubricHash, InputHash: inputHash, ConfigHash: domain.Hash(m.Provenance.Config.Judge), CreatedAt: m.CreatedAt, CompletedAt: &m.CreatedAt, Answers: answers, Total: domain.Ptr(7.)}}
 	invalid := base
+	invalid.Judgments = []domain.Judgment{}
+	invalid.Response = &domain.AgentResponse{FinishReason: domain.Ptr("tool_calls"), Calls: []domain.ToolCall{{Type: "function", Name: "abort", Arguments: "{"}}}
 	invalid.TrialID = "synthetic-invalid"
 	invalid.Decision = domain.Decision{Status: "invalid", InvalidReason: domain.Ptr("malformed_arguments"), RequestedNames: []string{"abort"}}
 	unavailable := m.Plan[0]
@@ -161,7 +173,9 @@ func TestSchemasAndSyntheticFixtures(t *testing.T) {
 	judgeErr := base
 	judgeErr.TrialID = "synthetic-judge-error"
 	judgeErr.Judgments = []domain.Judgment{{ID: "eval-synthetic", Status: "error", RequestedModel: "typesafe/jev-1.14", RubricVersion: "v1", CreatedAt: m.CreatedAt, CompletedAt: domain.Ptr(m.CreatedAt), Error: &domain.Failure{Kind: "api_error", Message: "Synthetic judge failure"}}}
-	fixtures := map[string]any{"success": base, "invalid": invalid, "unavailable": unavailable, "interrupted": interrupted, "judge-error": judgeErr, "manifest": m, "public": domain.Dataset{SchemaVersion: domain.SchemaVersion, UpdatedAt: &m.CreatedAt, Runs: []domain.PublicRun{{ID: m.RunID, Source: "fixture", Planned: 1, CreatedAt: m.CreatedAt, ConfigHash: m.Provenance.ConfigHash}}, Trials: []domain.PublicTrial{{Result: base}}}}
+	pubBase, _ := reporting.PublicResult(base, safety.Redactor{})
+	pubPending, _ := reporting.PublicResult(m.Plan[1], safety.Redactor{})
+	fixtures := map[string]any{"success": base, "invalid": invalid, "unavailable": unavailable, "interrupted": interrupted, "judge-error": judgeErr, "manifest": m, "public": domain.Dataset{SchemaVersion: domain.SchemaVersion, UpdatedAt: &m.CreatedAt, Runs: []domain.PublicRun{{ID: m.RunID, Source: "fixture", Planned: len(m.Plan), CreatedAt: m.CreatedAt, ConfigHash: m.Provenance.ConfigHash}}, Trials: []domain.PublicTrial{{Result: pubBase, SelectedEvaluationID: domain.Ptr("eval-synthetic-success")}, {Result: pubPending}}}}
 	for name, v := range fixtures {
 		file := filepath.Join("../../fixtures/results", name+".json")
 		if os.Getenv("UPDATE_FIXTURES") == "1" {

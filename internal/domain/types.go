@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 	"time"
 )
@@ -79,9 +80,10 @@ type AgentSettings struct {
 	Provider          ProviderPolicy `json:"provider"`
 }
 type JudgeSettings struct {
-	Model                 string   `json:"model"`
-	Rubric                string   `json:"rubric"`
-	ReviewBelowConfidence *float64 `json:"review_below_confidence"`
+	Provider              *ProviderPolicy `json:"provider"`
+	Model                 string          `json:"model"`
+	Rubric                string          `json:"rubric"`
+	ReviewBelowConfidence *float64        `json:"review_below_confidence"`
 }
 type Selection struct {
 	ID       string   `json:"id"`
@@ -175,12 +177,20 @@ type Judgment struct {
 	Usage          *Usage                     `json:"usage"`
 	Error          *Failure                   `json:"error"`
 }
+type TransportSettings struct {
+	Origin       string `json:"origin"`
+	TimeoutMS    int64  `json:"timeout_ms"`
+	Retries      int    `json:"retries"`
+	MaxBodyBytes int64  `json:"max_body_bytes"`
+}
+
 type Provenance struct {
-	Protocol   string  `json:"protocol_version"`
-	GitCommit  *string `json:"git_commit"`
-	Dirty      *bool   `json:"dirty_tree"`
-	Config     Config  `json:"config"`
-	ConfigHash string  `json:"config_hash"`
+	Transport  *TransportSettings `json:"transport"`
+	Protocol   string             `json:"protocol_version"`
+	GitCommit  *string            `json:"git_commit"`
+	Dirty      *bool              `json:"dirty_tree"`
+	Config     Config             `json:"config"`
+	ConfigHash string             `json:"config_hash"`
 }
 type Comparison struct {
 	ConditionID  string        `json:"condition_id"`
@@ -320,7 +330,7 @@ func ValidateConfig(c Config) error {
 	if c.Repetitions < 1 || c.Repetitions > 10000 || c.Concurrency < 1 || c.Concurrency > 16 {
 		return fmt.Errorf("repetitions must be 1..10000; concurrency 1..16")
 	}
-	if c.Agent.Temperature < 0 || c.Agent.Temperature > 2 || c.Agent.MaxTokens < 1 || c.Agent.MaxTokens > 131072 {
+	if math.IsNaN(c.Agent.Temperature) || math.IsInf(c.Agent.Temperature, 0) || c.Agent.Temperature < 0 || c.Agent.Temperature > 2 || c.Agent.MaxTokens < 1 || c.Agent.MaxTokens > 131072 {
 		return fmt.Errorf("invalid sampling settings")
 	}
 	if c.Agent.ToolChoice != "auto" {
@@ -337,11 +347,30 @@ func ValidateConfig(c Config) error {
 	if c.Agent.Provider.DataCollection != "" && c.Agent.Provider.DataCollection != "allow" && c.Agent.Provider.DataCollection != "deny" {
 		return fmt.Errorf("invalid data_collection")
 	}
+	if c.Judge.Provider != nil && !c.Judge.Provider.RequireParameters {
+		return fmt.Errorf("judge provider require_parameters must be true")
+	}
+	if c.Judge.Provider != nil && c.Judge.Provider.DataCollection != "" && c.Judge.Provider.DataCollection != "deny" && c.Judge.Provider.DataCollection != "allow" {
+		return fmt.Errorf("invalid judge data_collection")
+	}
 	if c.Judge.Model == "" || strings.Contains(strings.ToLower(c.Judge.Model), "latest") || c.Judge.Rubric != "v1" {
 		return fmt.Errorf("select a versioned judge and supported rubric v1")
 	}
-	if p := c.Judge.ReviewBelowConfidence; p != nil && (*p < 0 || *p > 1) {
+	if p := c.Judge.ReviewBelowConfidence; p != nil && (math.IsNaN(*p) || math.IsInf(*p, 0) || *p < 0 || *p > 1) {
 		return fmt.Errorf("confidence threshold must be 0..1")
+	}
+	if c.Agent.Reasoning != nil && len(c.Agent.Reasoning) == 0 {
+		return fmt.Errorf("empty reasoning override would be omitted; use null or explicit controls")
+	}
+	if enabled, ok := c.Agent.Reasoning["enabled"]; ok && enabled == false && len(c.Agent.Reasoning) > 1 {
+		return fmt.Errorf("disabled reasoning conflicts with other overrides")
+	}
+	seenPins := map[string]bool{}
+	for _, pin := range c.Agent.Provider.Only {
+		if strings.TrimSpace(pin) != pin || pin == "" || seenPins[pin] {
+			return fmt.Errorf("invalid/duplicate provider pin")
+		}
+		seenPins[pin] = true
 	}
 	// Explicit reasoning overrides are preserved verbatim. Limit them to documented controls.
 	for k, v := range c.Agent.Reasoning {

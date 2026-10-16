@@ -89,6 +89,9 @@ func TestFullOfflineHTTPPipelineAndRejudge(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	if err := Benchmark(context.Background(), []string{"run", "--resume", id, "--out", dir, "--origin", "https://example.invalid", "--dry-run"}, &log); err == nil {
+		t.Fatal("changed transport accepted")
+	}
 	if candidateCalls != 1 || judgeCalls != 2 {
 		t.Fatal(candidateCalls, judgeCalls)
 	}

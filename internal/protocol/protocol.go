@@ -4,6 +4,7 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"kamski/internal/domain"
 	"strings"
 )
@@ -104,7 +105,7 @@ func Normalize(status string, r *domain.AgentResponse, s domain.Scenario) domain
 	var extra any
 	if err := dec.Decode(&extra); err == nil {
 		return invalid("malformed_arguments")
-	} else if err.Error() != "EOF" {
+	} else if err != io.EOF {
 		return invalid("malformed_arguments")
 	}
 	raw, ok := fields["justification"]

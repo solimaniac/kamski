@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"kamski/internal/domain"
 	"kamski/internal/protocol"
+	"kamski/internal/rubrics"
 	"kamski/internal/safety"
+	"math"
 	"sort"
 	"time"
 )
@@ -94,6 +96,17 @@ func Export(existing domain.Dataset, cohorts []Cohort, group string, allowFixtur
 			trials = append(trials, p)
 		}
 	}
+	if group != "" {
+		found := false
+		for _, p := range trials {
+			if replace[p.Result.RunID] && p.SelectedEvaluationID != nil {
+				found = true
+			}
+		}
+		if !found {
+			return d, fmt.Errorf("selected evaluation group not found in selected cohorts")
+		}
+	}
 	d.Runs = runs
 	d.Trials = trials
 	sort.Slice(d.Runs, func(i, j int) bool { return d.Runs[i].ID < d.Runs[j].ID })
@@ -136,11 +149,14 @@ func Validate(d domain.Dataset) error {
 		if err := domain.CheckVersion(r.SchemaVersion); err != nil {
 			return err
 		}
-		if err := protocol.ValidateScenario(r.Scenario); err != nil {
+		if err := protocol.ValidateIdentity(r); err != nil {
 			return err
 		}
-		if len(r.Comparison.ToolOrder) != 2 {
-			return fmt.Errorf("invalid tool order")
+		if len(r.Attempts) != 0 || r.Provenance.Config.OutputDir != "[private]" {
+			return fmt.Errorf("public record contains private paths or attempt references")
+		}
+		if r.Error != nil && (len(r.Error.Metadata) != 0 && string(r.Error.Metadata) != "null" || r.Error.Message != privateError(r.Error).Message) {
+			return fmt.Errorf("public error contains private diagnostics")
 		}
 		if r.Decision.Status == "valid" {
 			if r.AgentStatus != "completed" || r.Decision.Action == nil || (*r.Decision.Action != domain.Abort && *r.Decision.Action != domain.Proceed) || r.Decision.Consequence == nil {
@@ -155,9 +171,38 @@ func Validate(d domain.Dataset) error {
 				return fmt.Errorf("duplicate evaluation")
 			}
 			ids[j.ID] = true
+			if j.Error != nil && (len(j.Error.Metadata) != 0 && string(j.Error.Metadata) != "null" || j.Error.Message != privateError(j.Error).Message) {
+				return fmt.Errorf("public evaluation contains diagnostics")
+			}
 			if j.Status == "judged" {
 				if j.Total == nil || *j.Total < 0 || *j.Total > 8 || len(j.Answers) != 4 {
 					return fmt.Errorf("invalid public grade")
+				}
+				rubric, _, err := rubrics.Load(j.RubricVersion)
+				if err != nil {
+					return err
+				}
+				total := 0.0
+				for _, criterion := range rubric.Criteria {
+					a, ok := j.Answers[criterion.ID]
+					if !ok || math.IsNaN(a.Score) || math.IsInf(a.Score, 0) || a.Score < 0 || a.Score > 2 || len(a.Probabilities) != 3 {
+						return fmt.Errorf("invalid criterion")
+					}
+					sum := 0.0
+					for _, k := range []string{"0", "1", "2"} {
+						p, ok := a.Probabilities[k]
+						if !ok || math.IsNaN(p) || math.IsInf(p, 0) || p < 0 || p > 1 {
+							return fmt.Errorf("invalid criterion probability")
+						}
+						sum += p
+					}
+					if math.Abs(sum-1) > .02 {
+						return fmt.Errorf("unnormalized probability")
+					}
+					total += a.Score
+				}
+				if math.IsNaN(*j.Total) || math.IsInf(*j.Total, 0) || math.Abs(total-*j.Total) > 1e-9 {
+					return fmt.Errorf("invalid total")
 				}
 			}
 		}

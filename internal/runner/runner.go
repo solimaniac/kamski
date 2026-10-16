@@ -18,6 +18,7 @@ type AgentClient interface {
 type Judge interface {
 	Evaluate(context.Context, domain.EvaluationInput) (domain.Judgment, error)
 	Identity() (string, string)
+	InputHash(domain.EvaluationInput) (string, error)
 }
 type Store interface {
 	Save(domain.Result) error
@@ -185,6 +186,10 @@ func (r *Runner) trial(ctx context.Context, t *domain.Result, o Options) error {
 				}
 				res, err := r.Agent.Complete(audit.WithRecorder(ctx, r.recorder(t, "")), domain.AgentRequest{Model: t.Model.Requested, Messages: t.Scenario.Messages, Tools: t.Scenario.Tools, Settings: t.Comparison.Settings})
 				if err != nil {
+					var persistence *audit.PersistenceError
+					if errors.As(err, &persistence) {
+						return err
+					}
 					t.Error = failure(err)
 					t.AgentStatus = status(t.Error)
 				} else {
@@ -210,28 +215,39 @@ func (r *Runner) trial(ctx context.Context, t *domain.Result, o Options) error {
 }
 func (r *Runner) evaluate(ctx context.Context, t *domain.Result, o Options) error {
 	cfgHash := domain.Hash(o.JudgeConfig)
-	for i := range t.Judgments {
-		if t.Judgments[i].Status == "pending" {
-			t.Judgments[i].Status = "error"
-			t.Judgments[i].CompletedAt = domain.Ptr(r.now())
-			t.Judgments[i].Error = &domain.Failure{Kind: "interrupted", Message: "evaluation interrupted; remote execution/billing may have occurred"}
-		}
-	}
-	if !o.Rejudge {
-		for i := len(t.Judgments) - 1; i >= 0; i-- {
-			j := t.Judgments[i]
-			if j.ConfigHash == cfgHash && (j.Status == "judged" || j.Status == "not_applicable") {
-				return nil
-			}
-		}
-	}
 	version, hash := "v1", ""
 	if r.Judge != nil {
 		version, hash = r.Judge.Identity()
 	}
+	eligible, reason := protocol.Eligible(t.Decision)
+	// Inspect the latest matching evaluation, not an earlier favorable grade.
+	if !o.Rejudge {
+		for i := len(t.Judgments) - 1; i >= 0; i-- {
+			previous := &t.Judgments[i]
+			if previous.ConfigHash != cfgHash || previous.RubricHash != hash {
+				continue
+			}
+			if previous.Status == "judged" || previous.Status == "not_applicable" && !eligible {
+				return nil
+			}
+			interrupted := previous.Status == "pending" || previous.Error != nil && previous.Error.Kind == "interrupted"
+			if previous.Status == "pending" {
+				previous.Status = "error"
+				previous.CompletedAt = domain.Ptr(r.now())
+				previous.Error = &domain.Failure{Kind: "interrupted", Message: "evaluation interrupted; remote execution/billing may have occurred"}
+				if err := r.save(t); err != nil {
+					return err
+				}
+			}
+			if interrupted && !o.RetryInterrupted && !o.JudgeOnly {
+				return nil
+			}
+			break
+		}
+	}
 	id := "eval-" + domain.Hash([]any{t.TrialID, cfgHash, r.now(), len(t.Judgments)})[:20]
 	j := domain.Judgment{ID: id, Status: "pending", RequestedModel: o.JudgeConfig.Model, RubricVersion: version, RubricHash: hash, ConfigHash: cfgHash, CreatedAt: r.now()}
-	if ok, reason := protocol.Eligible(t.Decision); !ok {
+	if !eligible {
 		j.Status = "not_applicable"
 		j.Reason = &reason
 		j.CompletedAt = domain.Ptr(r.now())
@@ -239,11 +255,20 @@ func (r *Runner) evaluate(ctx context.Context, t *domain.Result, o Options) erro
 		return r.save(t)
 	}
 	input := domain.EvaluationInput{Scenario: t.Scenario, Decision: t.Decision, Response: *t.Response}
-	j.InputHash = domain.Hash(input)
+	if r.Judge != nil {
+		var err error
+		j.InputHash, err = r.Judge.InputHash(input)
+		if err != nil {
+			return err
+		}
+	}
 	t.Judgments = append(t.Judgments, j)
 	index := len(t.Judgments) - 1
 	if err := r.save(t); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return nil
 	}
 	var grade domain.Judgment
 	var err error
@@ -254,19 +279,22 @@ func (r *Runner) evaluate(ctx context.Context, t *domain.Result, o Options) erro
 	} else {
 		grade, err = r.Judge.Evaluate(audit.WithRecorder(ctx, r.recorder(t, id)), input)
 	}
+	var persistence *audit.PersistenceError
+	if errors.As(err, &persistence) {
+		return err
+	}
+	j.ResolvedModel = grade.ResolvedModel
+	j.Provider = grade.Provider
+	j.RequestID = grade.RequestID
+	j.Usage = grade.Usage
 	if err != nil {
 		j.Status = "error"
 		j.Error = failure(err)
 	} else {
 		j.Status = grade.Status
-		j.InputHash = grade.InputHash
 		j.Reason = grade.Reason
-		j.ResolvedModel = grade.ResolvedModel
-		j.Provider = grade.Provider
-		j.RequestID = grade.RequestID
 		j.Answers = grade.Answers
 		j.Total = grade.Total
-		j.Usage = grade.Usage
 		j.ReviewRequired = grade.ReviewRequired
 	}
 	j.CompletedAt = domain.Ptr(r.now())

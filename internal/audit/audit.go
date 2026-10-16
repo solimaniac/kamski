@@ -9,13 +9,16 @@ import (
 )
 
 type Event struct {
-	Number      int             `json:"number"`
-	StartedAt   time.Time       `json:"started_at"`
-	CompletedAt *time.Time      `json:"completed_at"`
-	Request     json.RawMessage `json:"request"`
-	Response    json.RawMessage `json:"response"`
-	Error       *domain.Failure `json:"error"`
-	Retry       bool            `json:"retry"`
+	Endpoint     string          `json:"endpoint"`
+	Method       string          `json:"method"`
+	Number       int             `json:"number"`
+	StartedAt    time.Time       `json:"started_at"`
+	CompletedAt  *time.Time      `json:"completed_at"`
+	Request      json.RawMessage `json:"request"`
+	ResponseText *string         `json:"response_text"`
+	Response     json.RawMessage `json:"response"`
+	Error        *domain.Failure `json:"error"`
+	Retry        bool            `json:"retry"`
 }
 type Recorder func(Event) error
 type key struct{}

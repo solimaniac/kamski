@@ -115,12 +115,12 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 	}
 	for n := 1; n <= c.retries+1; n++ {
 		started := time.Now().UTC()
-		e := audit.Event{Number: n, StartedAt: started, Request: c.redactor.Bytes(payload)}
+		e := audit.Event{Number: n, Endpoint: target, Method: method, StartedAt: started, Request: c.redactor.Bytes(payload)}
 		if len(e.Request) == 0 {
 			e.Request = json.RawMessage(`null`)
 		}
 		if err := audit.Record(ctx, e); err != nil {
-			return nil, fmt.Errorf("persist started attempt: %w", err)
+			return nil, &audit.PersistenceError{Err: err}
 		}
 		callctx, cancel := context.WithTimeout(ctx, c.timeout)
 		req, err := http.NewRequestWithContext(callctx, method, target, bytes.NewReader(payload))
@@ -155,10 +155,11 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 					}
 				}
 			}
+			oversized := int64(len(raw)) > c.maxBody
 			raw = c.redactor.Bytes(raw)
 			if err != nil {
 				f = &domain.Failure{Kind: "transport", Message: c.redactor.Text(err.Error()), Retryable: true}
-			} else if int64(len(raw)) > c.maxBody {
+			} else if oversized {
 				raw = nil
 				f = &domain.Failure{Kind: "protocol_error", Message: "response exceeds bounded body size"}
 			} else {
@@ -170,11 +171,14 @@ func (c *Client) do(ctx context.Context, method, path string, body any) ([]byte,
 		e.Response = raw
 		if !json.Valid(raw) {
 			e.Response = nil
+			if len(raw) > 0 {
+				e.ResponseText = domain.Ptr(string(raw))
+			}
 		}
 		e.Error = f
 		e.Retry = f != nil && f.Retryable && n <= c.retries && ctx.Err() == nil && delay <= 2*time.Minute
 		if err := audit.Record(ctx, e); err != nil {
-			return nil, fmt.Errorf("persist completed attempt: %w", err)
+			return nil, &audit.PersistenceError{Err: err}
 		}
 		if f == nil {
 			return raw, nil

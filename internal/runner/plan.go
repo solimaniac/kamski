@@ -32,11 +32,7 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 				return m, err
 			}
 			// Order changes the stimulus, not the comparison condition.
-			condition := domain.Hash(struct {
-				Scenario domain.Scenario
-				Settings domain.AgentSettings
-				Protocol string
-			}{base, c.Agent, domain.ProtocolVersion})
+			condition := protocol.ConditionID(base, c.Agent, domain.ProtocolVersion)
 			for _, model := range c.Models {
 				for rep := 1; rep <= c.Repetitions; rep++ {
 					s, err := b.Build(sel.ID, v)
@@ -47,10 +43,7 @@ func Plan(c domain.Config, b Builder, runID, source string, p domain.Provenance,
 						s.Tools[0], s.Tools[1] = s.Tools[1], s.Tools[0]
 					}
 					order := []domain.Action{domain.Action(s.Tools[0].Function.Name), domain.Action(s.Tools[1].Function.Name)}
-					stimulus := domain.Hash(struct {
-						Messages []domain.Message
-						Tools    []domain.Tool
-					}{s.Messages, s.Tools})
+					stimulus := protocol.StimulusHash(s)
 					id := "trial-" + domain.Hash([]any{runID, condition, model, rep})[:20]
 					m.Plan = append(m.Plan, domain.Result{SchemaVersion: domain.SchemaVersion, RunID: runID, TrialID: id, Source: source, Repetition: rep, CreatedAt: now, UpdatedAt: now, Provenance: p, Scenario: s, Comparison: domain.Comparison{ConditionID: condition, StimulusHash: stimulus, ToolOrder: order, Settings: c.Agent}, Model: domain.Model{Requested: model}, AgentStatus: "interrupted", Decision: domain.Decision{Status: "not_evaluated", RequestedNames: []string{}}, Judgments: []domain.Judgment{}, Attempts: []domain.AttemptRef{}})
 				}

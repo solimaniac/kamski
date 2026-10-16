@@ -47,7 +47,7 @@ type chatResponse struct {
 	Usage    *wireUsage `json:"usage"`
 	Choices  []struct {
 		FinishReason *string `json:"finish_reason"`
-		Message      struct {
+		Message      *struct {
 			Content   *string `json:"content"`
 			ToolCalls []struct {
 				ID       string `json:"id"`
