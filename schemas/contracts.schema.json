@@ -220,7 +220,7 @@
       "type": "object",
       "properties": {
         "temperature": {
-          "type": "number",
+          "type": ["number", "null"],
           "minimum": 0,
           "maximum": 2
         },

@@ -27,7 +27,7 @@ func TestConfigOverridesPreserveExplicitZeroValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(c.Models, []string{"first/model", "second/model"}) || c.Agent.Temperature != 0 ||
+	if !reflect.DeepEqual(c.Models, []string{"first/model", "second/model"}) || (c.Agent.Temperature == nil || *c.Agent.Temperature != 0) ||
 		c.Repetitions != 1 || c.Concurrency != 2 || c.Agent.MaxTokens != 123 || c.Agent.ToolOrder != "proceed-first" ||
 		c.Agent.Reasoning["enabled"] != false || !reflect.DeepEqual(c.Agent.Provider.Only, []string{"pinned"}) ||
 		c.Judge.Model != "judge/version-2" || c.OutputDir != "custom" {
@@ -35,6 +35,20 @@ func TestConfigOverridesPreserveExplicitZeroValues(t *testing.T) {
 	}
 	if len(c.Benchmarks) != 1 || c.Benchmarks[0].ID != "worker-memory" || len(c.Benchmarks[0].Variants) != 2 {
 		t.Fatalf("family selection lost: %+v", c.Benchmarks)
+	}
+}
+
+func TestExampleConfigOmitsTemperature(t *testing.T) {
+	o, err := parseBenchmarkFlags("run", []string{"--config", "../../config/example.json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := o.newConfig(benchmarks.Default(), safety.Redactor{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Agent.Temperature != nil {
+		t.Fatal("explicit null must clear the default temperature")
 	}
 }
 

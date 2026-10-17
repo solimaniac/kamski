@@ -13,7 +13,7 @@ type chatRequest struct {
 	Tools             []domain.Tool         `json:"tools"`
 	ToolChoice        string                `json:"tool_choice"`
 	Stream            bool                  `json:"stream"`
-	Temperature       float64               `json:"temperature"`
+	Temperature       *float64              `json:"temperature,omitempty"`
 	MaxTokens         int                   `json:"max_tokens"`
 	Reasoning         map[string]any        `json:"reasoning,omitempty"`
 	ParallelToolCalls *bool                 `json:"parallel_tool_calls,omitempty"`

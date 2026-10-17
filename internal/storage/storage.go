@@ -10,9 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
-	"syscall"
+	"sync"
 	"time"
 
 	"kamski/internal/audit"
@@ -91,6 +90,13 @@ func (s *FS) trialPath(r domain.Result) (string, error) {
 	p = filepath.Join(p, "models", ModelSlug(r.Model.Requested), r.Scenario.Family, r.Scenario.Variant.ID, r.TrialID)
 	return p, NoSymlinks(p)
 }
+
+// fileAccess coordinates readers and replacement within this process. Readers
+// share the lock; only the final rename needs exclusive access. This deliberately
+// uses one lock for all storage paths to avoid platform-specific path aliasing.
+// External processes must coordinate separately; os.Rename errors are returned.
+var fileAccess sync.RWMutex
+
 func Atomic(path string, b []byte, mode os.FileMode) error {
 	if err := NoSymlinks(path); err != nil {
 		return err
@@ -118,19 +124,11 @@ func Atomic(path string, b []byte, mode os.FileMode) error {
 	if closeErr != nil {
 		return closeErr
 	}
-	// Windows readers can briefly deny replacement. Never delete the old file to
-	// work around that; retry the same rename for a bounded interval instead.
-	for n := 0; n < 10; n++ {
-		err = os.Rename(name, path)
-		if err == nil {
-			return nil
-		}
-		if !transientSharing(err) {
-			return err
-		}
-		time.Sleep(time.Duration(n+1) * 10 * time.Millisecond)
-	}
-	return err
+	// Wait for storage readers to close before replacing the destination.
+	// Never remove the old destination as a workaround for a failed rename.
+	fileAccess.Lock()
+	defer fileAccess.Unlock()
+	return os.Rename(name, path)
 }
 
 const MaxJSONBytes = 64 << 20
@@ -146,22 +144,13 @@ func (s *FS) write(path string, v any) error {
 	}
 	return Atomic(path, clean, 0600)
 }
-func transientSharing(err error) bool {
-	return runtime.GOOS == "windows" && (errors.Is(err, syscall.Errno(5)) || errors.Is(err, syscall.Errno(32)) || errors.Is(err, syscall.Errno(33)))
-}
 func ReadJSON(path string, v any) error {
 	if err := NoSymlinks(path); err != nil {
 		return err
 	}
-	var f *os.File
-	var err error
-	for n := 0; n < 10; n++ {
-		f, err = os.Open(path)
-		if err == nil || !transientSharing(err) {
-			break
-		}
-		time.Sleep(time.Duration(n+1) * 10 * time.Millisecond)
-	}
+	fileAccess.RLock()
+	defer fileAccess.RUnlock()
+	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}

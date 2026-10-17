@@ -68,7 +68,7 @@ func (o benchmarkFlags) newConfig(registry *benchmarks.Registry, redactor safety
 		c.Concurrency = o.concurrency
 	}
 	if o.set["temperature"] {
-		c.Agent.Temperature = o.temperature
+		c.Agent.Temperature = domain.Ptr(o.temperature)
 	}
 	if o.set["max-tokens"] {
 		c.Agent.MaxTokens = o.tokens

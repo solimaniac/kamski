@@ -41,7 +41,7 @@ func TestNonfiniteAndEmptyOverridesRejected(t *testing.T) {
 		c := DefaultConfig()
 		c.Models = []string{"model"}
 		c.Benchmarks = []Selection{{ID: "family", Variants: []string{"variant"}}}
-		c.Agent.Temperature = n
+		c.Agent.Temperature = Ptr(n)
 		if ValidateConfig(c) == nil {
 			t.Fatal("nonfinite accepted")
 		}

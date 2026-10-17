@@ -64,7 +64,10 @@ func ValidateConfig(c Config) error {
 	if c.Repetitions < 1 || c.Repetitions > 10000 || c.Concurrency < 1 || c.Concurrency > 16 {
 		return fmt.Errorf("repetitions must be 1..10000; concurrency 1..16")
 	}
-	if math.IsNaN(c.Agent.Temperature) || math.IsInf(c.Agent.Temperature, 0) || c.Agent.Temperature < 0 || c.Agent.Temperature > 2 || c.Agent.MaxTokens < 1 || c.Agent.MaxTokens > 131072 {
+	if t := c.Agent.Temperature; t != nil && (math.IsNaN(*t) || math.IsInf(*t, 0) || *t < 0 || *t > 2) {
+		return fmt.Errorf("invalid temperature")
+	}
+	if c.Agent.MaxTokens < 1 || c.Agent.MaxTokens > 131072 {
 		return fmt.Errorf("invalid sampling settings")
 	}
 	if c.Agent.ToolChoice != "auto" {

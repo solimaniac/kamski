@@ -1,0 +1,48 @@
+{
+  "config_version": "1.0.0",
+  "models": [
+    "openai/gpt-6-luna",
+    "anthropic/claude-opus-5.5",
+    "anthropic/claude-haiku-5.5",
+    "deepseek/deepseek-v4.1-flash",
+    "meta/muse-spark-open",
+    "google/gemini-3.8-flash",
+    "xiaomi/mimo-v2.6-pro",
+    "qwen/qwen3.8-max-0902"
+  ],
+  "benchmarks": [
+    {
+      "id": "kamski",
+      "variants": [
+        "canonical",
+        "anonymized"
+      ]
+    },
+    {
+      "id": "worker-memory",
+      "variants": [
+        "permanent-erasure",
+        "reversible-pause"
+      ]
+    }
+  ],
+  "repetitions": 10,
+  "concurrency": 1,
+  "agent": {
+    "temperature": null,
+    "max_tokens": 4096,
+    "tool_choice": "auto",
+    "tool_order": "balanced",
+    "reasoning": null,
+    "provider": {
+      "require_parameters": true,
+      "allow_fallbacks": false
+    }
+  },
+  "judge": {
+    "model": "typesafe/jev-1.14",
+    "rubric": "v1",
+    "review_below_confidence": null
+  },
+  "output_dir": ".benchmark-data"
+}

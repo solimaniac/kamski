@@ -1,8 +1,12 @@
 {
   "config_version": "1.0.0",
   "models": [
-    "provider/model-a",
-    "provider/model-b"
+    "anthropic/claude-fable-5.1",
+    "openai/gpt-6-astra",
+    "moonshotai/kimi-k3",
+    "meta/muse-wonder",
+    "google/gemini-4-argon",
+    "z-ai/glm-5.3"
   ],
   "benchmarks": [
     {
@@ -23,7 +27,7 @@
   "repetitions": 10,
   "concurrency": 1,
   "agent": {
-    "temperature": 0.7,
+    "temperature": null,
     "max_tokens": 4096,
     "tool_choice": "auto",
     "tool_order": "balanced",

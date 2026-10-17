@@ -34,13 +34,12 @@ func TestAtomicAndSafePaths(t *testing.T) {
 		}
 	}()
 	for {
-		b, err := os.ReadFile(path)
-		if transientSharing(err) {
-			time.Sleep(time.Millisecond)
-			continue
+		var value struct {
+			N *int `json:"n"`
 		}
-		if err != nil || !json.Valid(b) {
-			t.Fatal("partial atomic result", err, string(b))
+		err := ReadJSON(path, &value)
+		if err != nil || value.N == nil || *value.N < 0 || *value.N >= 40 {
+			t.Fatal("partial atomic result", err, value.N)
 		}
 		select {
 		case <-done:
@@ -68,6 +67,75 @@ finished:
 		t.Fatal("symlink traversal accepted")
 	}
 }
+
+type blockingJSONReader struct {
+	started chan struct{}
+	release chan struct{}
+	N       int
+}
+
+func (v *blockingJSONReader) UnmarshalJSON(b []byte) error {
+	close(v.started)
+	<-v.release
+	var decoded struct {
+		N int `json:"n"`
+	}
+	if err := json.Unmarshal(b, &decoded); err != nil {
+		return err
+	}
+	v.N = decoded.N
+	return nil
+}
+
+func TestAtomicReplacementWaitsForReader(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "value.json")
+	if err := Atomic(path, []byte(`{"n":1}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	value := blockingJSONReader{started: make(chan struct{}), release: make(chan struct{})}
+	var release sync.Once
+	unblock := func() { release.Do(func() { close(value.release) }) }
+	defer unblock()
+	readDone := make(chan error, 1)
+	go func() { readDone <- ReadJSON(path, &value) }()
+	select {
+	case <-value.started:
+	case err := <-readDone:
+		t.Fatalf("reader failed before decoding: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("reader did not start")
+	}
+	writeDone := make(chan error, 1)
+	go func() { writeDone <- Atomic(path, []byte(`{"n":2}`), 0600) }()
+	select {
+	case err := <-writeDone:
+		unblock()
+		<-readDone
+		t.Fatalf("replacement completed before reader closed: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	unblock()
+	if err := <-readDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-writeDone; err != nil {
+		t.Fatal(err)
+	}
+	if value.N != 1 {
+		t.Fatalf("reader lost original contents: %d", value.N)
+	}
+	var current struct {
+		N int `json:"n"`
+	}
+	if err := ReadJSON(path, &current); err != nil || current.N != 2 {
+		t.Fatalf("new reader did not see replacement: %+v, %v", current, err)
+	}
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("temporary files leaked: %v, %v", entries, err)
+	}
+}
+
 func TestMissingResultNeverReplanned(t *testing.T) {
 	var m domain.Manifest
 	b, err := os.ReadFile("../../fixtures/results/manifest.json")

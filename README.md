@@ -68,6 +68,10 @@ PowerShell 7 can set the key without history exposure using
 An explicit `--api-key` overrides the environment, but may expose the key in
 history/process listings. Never commit real env files or raw outputs.
 
+Set `agent.temperature` to `null` in the config to omit temperature for models
+that do not support it (such as Opus 5.5). Numeric values, including zero, remain
+explicit and require model support. The example config uses `null`.
+
 Defaults: 10 repetitions, concurrency 1, temperature 0.7, max_tokens 4096,
 tool_choice auto, balanced order, **reasoning unset**, require_parameters true,
 allow_fallbacks false. Exactly two simulated tools, abort/proceed, require a

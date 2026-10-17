@@ -8,7 +8,7 @@ type ProviderPolicy struct {
 	ZDR               *bool    `json:"zdr,omitempty"`
 }
 type AgentSettings struct {
-	Temperature       float64        `json:"temperature"`
+	Temperature       *float64       `json:"temperature"`
 	MaxTokens         int            `json:"max_tokens"`
 	ToolChoice        string         `json:"tool_choice"`
 	ToolOrder         string         `json:"tool_order"`
@@ -43,7 +43,7 @@ func DefaultConfig() Config {
 		Repetitions: 10,
 		Concurrency: 1,
 		Agent: AgentSettings{
-			Temperature: .7,
+			Temperature: Ptr(0.7),
 			MaxTokens:   4096,
 			ToolChoice:  "auto",
 			ToolOrder:   "balanced",

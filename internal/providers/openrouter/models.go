@@ -102,7 +102,10 @@ func (c *Client) Preflight(ctx context.Context, model string, s domain.AgentSett
 		}
 		return nil
 	}
-	required := []string{"tools", "tool_choice", "temperature", "max_tokens"}
+	required := []string{"tools", "tool_choice", "max_tokens"}
+	if s.Temperature != nil {
+		required = append(required, "temperature")
+	}
 	if s.Reasoning != nil {
 		required = append(required, "reasoning")
 	}
