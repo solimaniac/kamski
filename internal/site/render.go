@@ -207,7 +207,8 @@ func templateFunctions() template.FuncMap {
 			}
 			return result.Scenario.Outcomes[*result.Decision.Action].Label
 		},
-		"short":    short,
-		"selected": reporting.Selected,
+		"short":      short,
+		"selected":   reporting.Selected,
+		"scoringKey": reporting.ScoringKey,
 	}
 }

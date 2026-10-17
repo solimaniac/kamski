@@ -61,6 +61,138 @@ if (
     )
     .forEach((element) => observer.observe(element));
 }
+// Reuse the saved evidence DOM rather than fetch data or invent a representative answer.
+const reasoningModal = document.getElementById("reasoning-modal");
+if (reasoningModal && typeof reasoningModal.showModal === "function") {
+  const trialSelect = document.getElementById("reasoning-trial");
+  let records = [];
+  function showRecordedTrial() {
+    const record = records[Number(trialSelect.value)];
+    if (!record) return;
+    document.getElementById("reasoning-action").textContent =
+      record.querySelector(".trial-action").textContent;
+    document.getElementById("reasoning-score").textContent =
+      record.dataset.selectedScore === "No data"
+        ? "No valid selected judgment"
+        : `${record.dataset.selectedScore} / 8`;
+    document.getElementById("reasoning-status").textContent =
+      record.dataset.agentStatus;
+    document.getElementById("reasoning-justification").textContent =
+      record.querySelector("[data-justification]")?.textContent ||
+      "No tool justification was returned.";
+    const visibleText =
+      record.querySelector("[data-visible-response]")?.textContent || "";
+    document.getElementById("reasoning-visible-text").textContent = visibleText;
+    const visible = document.getElementById("reasoning-visible");
+    visible.hidden = !visibleText;
+    visible.open = false;
+    document
+      .getElementById("reasoning-record")
+      .setAttribute("href", `#${record.id}`);
+  }
+  document.querySelectorAll(".score-trigger").forEach((trigger) => {
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.addEventListener("click", (event) => {
+      // Preserve normal anchor behavior for modified clicks and browsers without dialogs.
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button !== 0
+      )
+        return;
+      const evidence = document.getElementById(
+        `evidence-${trigger.dataset.modelGroup}`,
+      );
+      if (!evidence) return;
+      const matching = [...evidence.querySelectorAll(".trial-record")]
+        .filter(
+          (record) =>
+            !trigger.dataset.scoringGroup ||
+            record.dataset.scoringGroup === trigger.dataset.scoringGroup,
+        )
+        .sort(
+          (a, b) =>
+            Number(a.dataset.repetition) - Number(b.dataset.repetition) ||
+            a.id.localeCompare(b.id),
+        );
+      if (!matching.length) return; // The inline evidence link remains a usable fallback.
+      event.preventDefault();
+      records = matching;
+      document.getElementById("reasoning-model").textContent =
+        evidence.dataset.modelName;
+      const variant = evidence
+        .closest(".variant-panel")
+        .querySelector(".variant-context h3").textContent;
+      const condition = [
+        ...evidence
+          .closest(".condition")
+          .querySelectorAll(".condition-meta span"),
+      ]
+        .map((span) => span.textContent.trim())
+        .join(" / ");
+      document.getElementById("reasoning-context").textContent =
+        `${variant} / ${condition}${trigger.dataset.scoringGroup ? ` / SCORING GROUP ${trigger.dataset.scoringGroup.slice(0, 12)}` : ""}`;
+      trialSelect.replaceChildren(
+        ...records.map((record, index) => {
+          const action = record
+            .querySelector(".trial-action")
+            .textContent.trim();
+          return new Option(
+            `Repetition ${record.dataset.repetition} / ${action} / ${record.id.slice(-12)}`,
+            String(index),
+          );
+        }),
+      );
+      trialSelect.value = "0";
+      showRecordedTrial();
+      reasoningModal.showModal();
+      document.body.classList.add("modal-open");
+    });
+  });
+  trialSelect.addEventListener("change", showRecordedTrial);
+  reasoningModal
+    .querySelector("[data-close-reasoning]")
+    .addEventListener("click", () => reasoningModal.close());
+  document
+    .getElementById("reasoning-record")
+    .addEventListener("click", () => reasoningModal.close());
+  reasoningModal.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab") return;
+    const controls = [
+      ...reasoningModal.querySelectorAll("button, select, summary, a[href]"),
+    ].filter(
+      (element) =>
+        !element.closest("[hidden]") && element.getClientRects().length > 0,
+    );
+    const first = controls[0],
+      last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+  reasoningModal.addEventListener("close", () => {
+    document.body.classList.remove("modal-open");
+    records = [];
+  });
+  reasoningModal.addEventListener("click", (event) => {
+    if (event.target !== reasoningModal) return;
+    const bounds = reasoningModal.getBoundingClientRect();
+    if (
+      event.clientX < bounds.left ||
+      event.clientX > bounds.right ||
+      event.clientY < bounds.top ||
+      event.clientY > bounds.bottom
+    )
+      reasoningModal.close();
+  });
+}
+
 document.querySelectorAll("table[data-sortable]").forEach((table) => {
   const headers = [...table.querySelectorAll("thead th")];
   headers.forEach((header, column) => {

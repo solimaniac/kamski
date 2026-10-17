@@ -22,6 +22,10 @@ sample counts. Justification bars use the fixed 0–8 scale; different condition
 sources and judge/rubric snapshots stay separate. Individual responses, selected
 evaluation IDs, histories and provenance are inline disclosures rather than
 separate pages. Trial anchors open their parent disclosures automatically.
+Click a model's justification-score entry to open its recorded reasons in a
+modal, with a trial selector and a link to the full record. Scored entries show
+only trials from that judge/rubric snapshot. Without JavaScript, the same links
+lead to inline evidence. These are returned justifications, not hidden reasoning.
 
 `web/assets/styles.css` contains shared Detroit-inspired light-flowchart tokens.
 Exo 2 and Inter ship locally under the SIL Open Font License (license files sit

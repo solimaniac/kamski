@@ -63,6 +63,189 @@ async function key(page, key, code, vk) {
   });
   await sleep(40);
 }
+async function checkReasoningModal(page, width) {
+  const expected = await page.eval(() => {
+    const trigger = document.querySelector(
+      ".variant-panel:not([hidden]) .score-trigger",
+    );
+    if (!trigger) return null;
+    const evidence = document.getElementById(
+      `evidence-${trigger.dataset.modelGroup}`,
+    );
+    const records = [...evidence.querySelectorAll(".trial-record")]
+      .filter(
+        (record) =>
+          !trigger.dataset.scoringGroup ||
+          record.dataset.scoringGroup === trigger.dataset.scoringGroup,
+      )
+      .sort(
+        (a, b) =>
+          Number(a.dataset.repetition) - Number(b.dataset.repetition) ||
+          a.id.localeCompare(b.id),
+      );
+    trigger.focus();
+    return {
+      model: evidence.dataset.modelName,
+      group: trigger.dataset.modelGroup,
+      records: records.map((record) => ({
+        id: record.id,
+        text: record.querySelector("[data-justification]").textContent,
+        action: record.querySelector(".trial-action").textContent,
+        score: record.dataset.selectedScore,
+      })),
+    };
+  });
+  if (!expected?.records.length) return;
+  await key(page, "Enter", "Enter", 13);
+  assert.equal(
+    await page.eval(() => document.querySelector("#reasoning-modal").open),
+    true,
+    "score link opens native modal with Enter",
+  );
+  assert.equal(
+    await page.eval(
+      () => document.querySelector("#reasoning-model").textContent,
+    ),
+    expected.model,
+  );
+  assert.equal(
+    await page.eval(
+      () => document.querySelector("#reasoning-trial").options.length,
+    ),
+    expected.records.length,
+    "only this condition and scoring snapshot",
+  );
+  assert.equal(
+    await page.eval(
+      () => document.querySelector("#reasoning-justification").textContent,
+    ),
+    expected.records[0].text,
+    "verbatim recorded justification",
+  );
+  assert.equal(
+    await page.eval(() =>
+      document.activeElement.matches("[data-close-reasoning]"),
+    ),
+    true,
+    "close control receives focus",
+  );
+  const last = expected.records.length - 1;
+  await page.eval((index) => {
+    const select = document.querySelector("#reasoning-trial");
+    select.value = String(index);
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }, last);
+  assert.equal(
+    await page.eval(
+      () => document.querySelector("#reasoning-justification").textContent,
+    ),
+    expected.records[last].text,
+  );
+  assert.equal(
+    await page.eval(
+      () => document.querySelector("#reasoning-action").textContent,
+    ),
+    expected.records[last].action,
+  );
+  assert.equal(
+    await page.eval(() =>
+      document.querySelector("#reasoning-record").getAttribute("href"),
+    ),
+    `#${expected.records[last].id}`,
+  );
+  await assertNoOverflow(page, "modal document overflow");
+  assert.equal(
+    await page.eval(() => {
+      const modal = document
+        .querySelector("#reasoning-modal")
+        .getBoundingClientRect();
+      const content = document.querySelector(".reasoning-scroll");
+      return (
+        modal.left >= 0 &&
+        modal.right <= innerWidth &&
+        modal.top >= 0 &&
+        modal.bottom <= innerHeight &&
+        content.scrollWidth <= content.clientWidth
+      );
+    }),
+    true,
+    "dialog stays inside viewport and wraps long text",
+  );
+  await page.screenshot({
+    path: join(output, `reasoning-${width}.jpg`),
+    quality: 90,
+  });
+  for (let i = 0; i < 6; i++) {
+    await key(page, "Tab", "Tab", 9);
+    assert.equal(
+      await page.eval(
+        () => !!document.activeElement.closest("#reasoning-modal"),
+      ),
+      true,
+      "focus stays in modal",
+    );
+  }
+  await key(page, "Escape", "Escape", 27);
+  assert.equal(
+    await page.eval(() => document.querySelector("#reasoning-modal").open),
+    false,
+    "Escape closes modal",
+  );
+  assert.equal(
+    await page.eval(() => document.body.classList.contains("modal-open")),
+    false,
+    "page scroll restored",
+  );
+  assert.equal(
+    await page.eval(
+      (group) => document.activeElement.dataset.modelGroup === group,
+      expected.group,
+    ),
+    true,
+    "focus restored to score link",
+  );
+  await key(page, "Enter", "Enter", 13);
+  await page.eval(() =>
+    document.querySelector("[data-close-reasoning]").click(),
+  );
+  assert.equal(
+    await page.eval(() => document.querySelector("#reasoning-modal").open),
+    false,
+    "close button works",
+  );
+  await key(page, "Enter", "Enter", 13);
+  for (const type of ["mousePressed", "mouseReleased"]) {
+    await page.send("Input.dispatchMouseEvent", {
+      type,
+      x: 2,
+      y: 2,
+      button: "left",
+      clickCount: 1,
+    });
+  }
+  await sleep(40);
+  assert.equal(
+    await page.eval(() => document.querySelector("#reasoning-modal").open),
+    false,
+    "backdrop click closes modal",
+  );
+  await key(page, "Enter", "Enter", 13);
+  const recordID = await page.eval(() =>
+    document.querySelector("#reasoning-record").getAttribute("href").slice(1),
+  );
+  await page.eval(() => document.querySelector("#reasoning-record").click());
+  await sleep(80);
+  assert.equal(
+    await page.eval(() => document.querySelector("#reasoning-modal").open),
+    false,
+  );
+  assert.equal(
+    await page.eval((id) => document.getElementById(id).open, recordID),
+    true,
+    "full-record link opens inline evidence",
+  );
+}
+
 async function checkViewport(browser, origin, width) {
   const page = await browser.newPage({
     width,
@@ -280,10 +463,11 @@ async function checkViewport(browser, origin, width) {
       ),
       0,
     );
+    await checkReasoningModal(page, width);
     assert.equal(page.consoleErrors.length, 0, page.consoleErrors.join("\n"));
     assert.deepEqual(remoteRequests, [], "unexpected external requests");
     console.log(
-      `${width}px: radio keyboard selection, disclosures, sorting, trial deep links, definitions, local fonts, no overflow/errors/external requests`,
+      `${width}px: radio selection, disclosures, sorting, deep links, reasoning modal/trial selection/focus/Escape, local fonts, no overflow/errors/external requests`,
     );
   } finally {
     await page.close();
@@ -308,6 +492,27 @@ async function checkFallbacks(browser, origin) {
       "none",
     );
     await assertNoOverflow(page, "no-JS overflow");
+    const fallbackID = await page.eval(() => {
+      const trigger = document.querySelector(".score-trigger");
+      if (!trigger) return null;
+      trigger.click();
+      return trigger.hash.slice(1);
+    });
+    if (fallbackID) {
+      await sleep(80);
+      assert.equal(
+        await page.eval(
+          (id) => document.getElementById(id).closest(".evidence").open,
+          fallbackID,
+        ),
+        true,
+        "no-JS score link reveals inline evidence",
+      );
+      assert.equal(
+        await page.eval(() => document.querySelector("#reasoning-modal").open),
+        false,
+      );
+    }
     await page.send("Emulation.setScriptExecutionDisabled", { value: false });
     await page.goto(pathToFileURL(join(root, "index.html")).href, {
       settleMs: 150,

@@ -51,6 +51,19 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 	if canonical < 0 || anonymized <= canonical {
 		t.Fatal("canonical baseline must precede anonymized variant")
 	}
+	if strings.Count(html, `id="reasoning-modal"`) != 1 || !strings.Contains(html, `aria-labelledby="reasoning-title"`) {
+		t.Fatal("a single labeled reasoning dialog must serve the report")
+	}
+	for _, group := range reporting.Groups(d) {
+		if !strings.Contains(html, `href="#evidence-`+group.Key+`"`) || !strings.Contains(html, `id="evidence-`+group.Key+`"`) {
+			t.Fatal("score links need an inline evidence fallback", group.Key)
+		}
+		for _, score := range group.Scores {
+			if !strings.Contains(html, `data-model-group="`+group.Key+`" data-scoring-group="`+score.Key+`"`) {
+				t.Fatal("modal trigger lost condition/scoring snapshot identity", group.Key, score.Key)
+			}
+		}
+	}
 	if strings.Count(html, `class="action-bar"`) != len(reporting.Groups(d)) {
 		t.Fatal("each source/condition/model group needs a separate action bar")
 	}

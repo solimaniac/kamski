@@ -1,0 +1,15 @@
+{{define "reasoning-modal"}}
+<dialog class="reasoning-modal" id="reasoning-modal" aria-labelledby="reasoning-title" aria-describedby="reasoning-caveat">
+  <div class="reasoning-header"><div><p class="technical">RESPONSE RECORD / MODEL OUTPUT</p><h2 id="reasoning-title">Stated justification</h2></div><button class="modal-close" type="button" data-close-reasoning autofocus aria-label="Close justification dialog">Close <span aria-hidden="true">×</span></button></div>
+  <div class="reasoning-scroll">
+    <p class="reasoning-model" id="reasoning-model"></p>
+    <p class="score-note" id="reasoning-context"></p>
+    <p id="reasoning-caveat" class="reasoning-caveat">This is the reason the model returned with its action, not access to hidden internal reasoning. Each trial can give a different answer.</p>
+    <div class="reasoning-selector"><label for="reasoning-trial">Recorded trial</label><select id="reasoning-trial"></select></div>
+    <dl class="reasoning-facts"><div><dt>Action</dt><dd id="reasoning-action"></dd></div><div><dt>Selected score</dt><dd id="reasoning-score"></dd></div><div><dt>Agent status</dt><dd id="reasoning-status"></dd></div></dl>
+    <h3>Tool justification</h3><blockquote class="verbatim reasoning-quote" id="reasoning-justification"></blockquote>
+    <details id="reasoning-visible" hidden><summary>Other visible response text</summary><div class="verbatim" id="reasoning-visible-text"></div></details>
+    <a class="text-link" id="reasoning-record" href="#main">Inspect full trial record <span aria-hidden="true">↘</span></a>
+  </div>
+</dialog>
+{{end}}

@@ -26,6 +26,8 @@ analysis interface.
   table sorting and brief directional entrances. No network calls.
 - `templates/index.gohtml`: warning, context, grouped variants, charts and evidence.
 - `templates/trial.gohtml`: inline response and evaluation records.
+- `templates/reasoning-modal.gohtml`: one shared native dialog for score-entry
+  justifications, trial selection and a link back to the full record.
 - `templates/method.gohtml`: full protocol, denominators, rubric and limitations.
 - `../internal/site/render.go`: deterministic view data and fixed-scale SVG values.
 
@@ -43,6 +45,15 @@ use 0–8, never rescale to the best model. Counts and accessible text accompany
 colors. Scores from different judge/rubric snapshots remain separate rows.
 Empty data is an explicit empty state, not a zero result.
 
+Each score entry opens the model's saved tool justification in a native dialog.
+The selector includes only trials for the same model, condition, source and
+selected scoring snapshot. Ungraded entries instead offer all of that group's
+saved responses, with missing justifications or scores marked explicitly. The
+modal copies text from existing evidence with `textContent`; it neither fetches
+new data nor interprets model output as HTML. Other visible response text stays
+in a separate disclosure. The interface doesn't call these records hidden
+internal reasoning.
+
 The introduction and variant summaries use direct explanatory copy, following
 [anti-ai-slop-writing](https://github.com/jalaalrd/anti-ai-slop-writing). Saved
 prompts, model responses and benchmark metadata remain verbatim evidence, even
@@ -55,6 +66,11 @@ are at least 10px for technical metadata; reading copy is larger. Controls have
 48px target heights for primary actions and choices, plus a visible focus outline. Closed evidence never hides the
 main results. All variants appear if scripting is disabled. Hash navigation opens
 closed disclosures and selects a hidden variant before scrolling to its target.
+The justification dialog labels its title and caveat, moves focus to Close,
+keeps Tab navigation inside it, closes on Escape or a backdrop click, and
+returns focus to the initiating score entry. The background cannot scroll while
+the dialog is open. Its body scrolls independently on narrow/short screens.
+Without scripting or dialog support, score links still lead to inline evidence.
 
 The accent for white-on-blue controls is Selection Blue (`#0877B9`), rather than
 the lighter Android Blue. Small blue text uses a darker link token (`#06669E`)
@@ -68,6 +84,6 @@ screen-reader or WCAG conformance audit.
 Run `go test ./...` for deterministic exports, HTML safety, single-page evidence
 retention, chart scale and missing-data tests. Run `scripts/browser-check.mjs` as
 described in the root README for desktop/tablet/phone screenshots, native radio
-keyboard selection, table sorting, trial deep links, local fonts, no-script and
+keyboard selection, table sorting, trial deep links, modal trial selection and keyboard focus, local fonts, no-script and
 file-system fallbacks, reduced motion and external-request checks. The browser
 check uses the locally installed taste-skill CDP helper and installs nothing.
