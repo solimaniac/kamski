@@ -293,6 +293,30 @@ async function checkViewport(browser, origin, width) {
       "local fonts loaded",
     );
     await assertNoOverflow(page, "initial document overflow");
+    assert.equal(
+      await page.eval(
+        () => document.querySelector(".system-header .repository-link").href,
+      ),
+      "https://github.com/solimaniac/kamski",
+    );
+    assert.equal(
+      await page.eval(() => {
+        const link = document
+          .querySelector(".repository-link")
+          .getBoundingClientRect();
+        const brand = document
+          .querySelector(".wordmark")
+          .getBoundingClientRect();
+        return (
+          link.left >= brand.right &&
+          Math.abs(
+            (link.top + link.bottom) / 2 - (brand.top + brand.bottom) / 2,
+          ) < 3
+        );
+      }),
+      true,
+      "repository link sits to the right of the brand on the top header row",
+    );
     assert.deepEqual(
       await page.eval(() =>
         [...document.querySelectorAll("h1, h2, h3")]
