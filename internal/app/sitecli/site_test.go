@@ -64,11 +64,11 @@ func TestUpdateWholeCohortAndOfflineBuild(t *testing.T) {
 	if err = schema.Validate(raw); err != nil {
 		t.Fatal(err)
 	}
-	before, err := os.ReadFile(filepath.Join(dest, "scenario-worker-memory-permanent-erasure.html"))
+	before, err := os.ReadFile(filepath.Join(dest, "index.html"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(before), "Synthetic fixtures. Not live measurements.") || !strings.Contains(string(before), "7.00") {
+	if !strings.Contains(string(before), "SYNTHETIC FIXTURE / NOT A LIVE MEASUREMENT") || !strings.Contains(string(before), "7.00") {
 		t.Fatal("demo labels/grade absent")
 	}
 	// Build needs neither raw directories nor credentials, including after deleting input.
@@ -79,7 +79,7 @@ func TestUpdateWholeCohortAndOfflineBuild(t *testing.T) {
 	if err = Run([]string{"build", "--data", public, "--out", dest}, &log); err != nil {
 		t.Fatal(err)
 	}
-	after, _ := os.ReadFile(filepath.Join(dest, "scenario-worker-memory-permanent-erasure.html"))
+	after, _ := os.ReadFile(filepath.Join(dest, "index.html"))
 	if !bytes.Equal(before, after) {
 		t.Fatal("offline nondeterministic")
 	}

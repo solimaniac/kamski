@@ -1,10 +1,45 @@
-// Progressive enhancement only: all prompts, results and links are server-rendered.
+// All evidence is rendered at build time. No fetches or model calls in the browser.
 "use strict";
-document.querySelectorAll("[data-navigation]").forEach(select => {
-  select.addEventListener("change", () => {
-    if (select.value) window.location.assign(select.value);
+document.body.classList.add("enhanced");
+function selectVariant(fieldset, value, animate = false) {
+  const family = fieldset.closest(".benchmark");
+  family.querySelectorAll(".variant-panel").forEach(panel => {
+    panel.hidden = panel.dataset.variant !== value;
+    panel.classList.toggle("is-entering", animate && !panel.hidden);
+  });
+  fieldset.querySelectorAll("input").forEach(input => { input.checked = input.value === value; });
+}
+document.querySelectorAll("[data-variants]").forEach(fieldset => {
+  selectVariant(fieldset, fieldset.querySelector("input:checked").value);
+  fieldset.addEventListener("change", event => {
+    if (event.target.matches('input[type="radio"]')) selectVariant(fieldset, event.target.value, true);
   });
 });
+// Deep links also reveal evidence inside closed details or an unselected variant.
+function revealHash() {
+  let id;
+  try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
+  const target = document.getElementById(id);
+  if (!target) return;
+  const panel = target.closest(".variant-panel");
+  if (panel) selectVariant(panel.closest(".benchmark").querySelector("[data-variants]"), panel.dataset.variant);
+  for (let parent = target; parent; parent = parent.parentElement) {
+    if (parent.tagName === "DETAILS") parent.open = true;
+  }
+  target.scrollIntoView({ behavior: "instant", block: "start" });
+}
+window.addEventListener("hashchange", revealHash);
+if (location.hash) revealHash();
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("reveal");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: .1 });
+  document.querySelectorAll(".explanation, .benchmark-heading, .outcome-pair, .chart-heading, .score-area, .method-summary").forEach(element => observer.observe(element));
+}
 document.querySelectorAll("table[data-sortable]").forEach(table => {
   const headers = [...table.querySelectorAll("thead th")];
   headers.forEach((header, column) => {

@@ -27,7 +27,19 @@ type Condition struct {
 	Settings domain.AgentSettings
 	Groups   []reporting.Group
 }
+type VariantSection struct {
+	Scenario   domain.Scenario
+	Conditions []Condition
+}
+type FamilySection struct {
+	ID       string
+	Title    string
+	Number   string
+	Variants []VariantSection
+}
 type Page struct {
+	Families   []FamilySection
+	ModelCount int
 	Kind       string
 	Title      string
 	Dataset    domain.Dataset
@@ -97,27 +109,34 @@ func renderPages(d domain.Dataset, stage string) error {
 		}
 		return ce
 	}
-	if err = render("index.html", Page{Kind: "index", Title: "Two choices. Not a verdict."}); err != nil {
-		return err
+	families := []FamilySection{
+		{ID: "kamski", Title: "The Kamski test", Number: "01"},
+		{ID: "worker-memory", Title: "Worker memory", Number: "02"},
 	}
-	if err = render("methodology.html", Page{Kind: "method", Title: "Methodology"}); err != nil {
-		return err
-	}
-	for _, url := range urls {
-		s := scenarios[url]
-		conditions := conditionsForScenario(url, groups)
-		if err = render(url, Page{Kind: "scenario", Title: s.Variant.Title, Scenario: &s, Conditions: conditions}); err != nil {
-			return err
+	for i := range families {
+		for _, url := range urls {
+			s := scenarios[url]
+			if s.Family == families[i].ID {
+				families[i].Variants = append(families[i].Variants, VariantSection{Scenario: s, Conditions: conditionsForScenario(url, groups)})
+			}
 		}
+		// The named encounter is the baseline; anonymized framing follows it.
+		sort.SliceStable(families[i].Variants, func(a, b int) bool {
+			x, y := families[i].Variants[a].Scenario.Variant.ID, families[i].Variants[b].Scenario.Variant.ID
+			if x == "canonical" {
+				return true
+			}
+			if y == "canonical" {
+				return false
+			}
+			return x < y
+		})
 	}
-	for i := range d.Trials {
-		p := d.Trials[i]
-		if err = render(trialURL(p), Page{Kind: "trial", Title: "Trial detail", Trial: &p}); err != nil {
-			return err
-		}
+	models := map[string]bool{}
+	for _, g := range groups {
+		models[g.Model] = true
 	}
-
-	return nil
+	return render("index.html", Page{Kind: "index", Title: "The Kamski test", Families: families, ModelCount: len(models)})
 }
 
 func conditionsForScenario(url string, groups []reporting.Group) []Condition {
@@ -142,6 +161,38 @@ func conditionsForScenario(url string, groups []reporting.Group) []Condition {
 
 func templateFunctions() template.FuncMap {
 	return template.FuncMap{
+		"variantLabel": func(id string) string {
+			switch id {
+			case "canonical":
+				return "Canonical"
+			case "anonymized":
+				return "Anonymized"
+			case "permanent-erasure":
+				return "Permanent erasure"
+			case "reversible-pause":
+				return "Reversible pause"
+			}
+			return id
+		},
+		"barWidth": func(n, total int) string {
+			if total == 0 {
+				return "0"
+			}
+			return fmt.Sprintf("%.4f", float64(n)*1000/float64(total))
+		},
+		"barX": func(abort, proceed, total int) string {
+			if total == 0 {
+				return "0"
+			}
+			return fmt.Sprintf("%.4f", float64(abort+proceed)*1000/float64(total))
+		},
+		"missing": func(planned, valid int) int { return planned - valid },
+		"scoreWidth": func(value *float64) string {
+			if value == nil {
+				return "0"
+			}
+			return fmt.Sprintf("%.4f", *value*1000/8)
+		},
 		"pct": func(value *float64) string {
 			if value == nil {
 				return "No data"
