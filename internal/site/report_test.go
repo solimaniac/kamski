@@ -38,7 +38,7 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 	if strings.Count(html, "<h1 ") != 1 || strings.Contains(html, "methodology.html") || strings.Contains(html, "scenario-kamski-") {
 		t.Fatal("multi-page structure leaked into the report")
 	}
-	positions := []string{"STORY SPOILERS", `id="report-title"`, `id="the-test"`, `id="kamski"`, `id="worker-memory"`, `id="rubric-and-judge"`}
+	positions := []string{"STORY SPOILERS", `id="report-title"`, `id="the-test"`, `id="benchmark-results"`, `id="kamski"`, `id="worker-memory"`, `id="rubric-and-judge"`}
 	previous := -1
 	for _, marker := range positions {
 		at := strings.Index(html, marker)
@@ -51,6 +51,12 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 		if strings.Contains(html, removed) {
 			t.Errorf("removed reference copy remains: %s", removed)
 		}
+	}
+	if strings.Contains(html, `class="dataset-strip"`) || !strings.Contains(html, `<a href="#benchmark-results">Benchmark results</a>`) {
+		t.Fatal("summary strip must be removed and the header must link to benchmark results")
+	}
+	if strings.Contains(html, `<a href="#kamski">Kamski</a>`) || strings.Contains(html, `<a href="#worker-memory">Worker memory</a>`) {
+		t.Fatal("individual scenario links must not remain in the header")
 	}
 	if !strings.Contains(html, "<h2>The rubric</h2>") || !strings.Contains(html, "<h2>The judge</h2>") {
 		t.Fatal("rubric and judge details must remain available")

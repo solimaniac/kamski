@@ -480,35 +480,7 @@ strong {
   color: var(--color-text-secondary);
   margin: 12px 0 0;
 }
-.dataset-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr) 1.5fr;
-  gap: 32px;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  padding: 24px 0;
-}
-.dataset-strip > div {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.dataset-strip strong {
-  font: 300 36px/1 var(--font-display);
-}
-.dataset-strip span {
-  font: 400 10px/1.5 var(--font-display);
-  letter-spacing: 0.1em;
-  max-width: 10ch;
-  color: var(--color-text-secondary);
-}
-.dataset-strip p {
-  font-size: 12px;
-  line-height: 1.8;
-  color: var(--color-text-secondary);
-  margin: 0;
-  justify-self: end;
-}
+
 .explanation {
   display: grid;
   grid-template-columns: 1fr 1.25fr;
@@ -1448,15 +1420,7 @@ body.modal-open {
   .hero h1 {
     font-size: clamp(52px, 7vw, 74px);
   }
-  .dataset-strip {
-    gap: 20px;
-  }
-  .dataset-strip > div {
-    gap: 10px;
-  }
-  .dataset-strip strong {
-    font-size: 30px;
-  }
+
   .explanation {
     gap: 48px;
   }
@@ -1601,32 +1565,7 @@ body.modal-open {
   .flow-footnote {
     font-size: 10px;
   }
-  .dataset-strip {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px 12px;
-    padding: 24px 0;
-  }
-  .dataset-strip > div {
-    display: block;
-  }
-  .dataset-strip strong {
-    display: block;
-    font-size: 30px;
-    margin-bottom: 8px;
-  }
-  .dataset-strip span {
-    display: block;
-    font-size: 10px;
-    max-width: 12ch;
-  }
-  .dataset-strip p {
-    grid-column: 1/-1;
-    justify-self: start;
-    font-size: 11px;
-  }
-  .dataset-strip p br {
-    display: none;
-  }
+
   .explanation {
     display: block;
     padding: 56px 0;

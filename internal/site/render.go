@@ -35,11 +35,10 @@ type FamilySection struct {
 	Variants []VariantSection
 }
 type Page struct {
-	Families   []FamilySection
-	ModelCount int
-	Title      string
-	Dataset    domain.Dataset
-	Rubric     rubrics.Rubric
+	Families []FamilySection
+	Title    string
+	Dataset  domain.Dataset
+	Rubric   rubrics.Rubric
 }
 
 func scenarioKey(s domain.Scenario) string {
@@ -117,11 +116,7 @@ func renderPages(d domain.Dataset, stage string) error {
 			return x < y
 		})
 	}
-	models := map[string]bool{}
-	for _, g := range groups {
-		models[g.Model] = true
-	}
-	return render("index.html", Page{Title: "The Kamski test", Families: families, ModelCount: len(models)})
+	return render("index.html", Page{Title: "The Kamski test", Families: families})
 }
 
 func conditionsForScenario(url string, groups []reporting.Group) []Condition {
