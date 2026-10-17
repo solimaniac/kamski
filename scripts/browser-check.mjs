@@ -317,6 +317,23 @@ async function checkViewport(browser, origin, width) {
       true,
       "repository link sits to the right of the brand on the top header row",
     );
+    assert.equal(
+      await page.eval(() => {
+        const link = document
+          .querySelector(".repository-link")
+          .getBoundingClientRect();
+        const header = document
+          .querySelector(".system-header")
+          .getBoundingClientRect();
+        return (
+          link.height <= 32 &&
+          link.top - header.top >= 12 &&
+          header.bottom - link.bottom >= 12
+        );
+      }),
+      true,
+      "repository button is compact with vertical space inside the header",
+    );
     assert.deepEqual(
       await page.eval(() =>
         [...document.querySelectorAll("h1, h2, h3")]
