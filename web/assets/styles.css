@@ -482,6 +482,7 @@ strong {
 }
 
 .explanation {
+  border-top: 1px solid var(--color-border);
   display: grid;
   grid-template-columns: 1fr 1.25fr;
   gap: 80px;
