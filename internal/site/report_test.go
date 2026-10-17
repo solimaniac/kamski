@@ -108,6 +108,31 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 	}
 }
 
+func TestScenarioSummariesStandAlone(t *testing.T) {
+	summary := templateFunctions()["variantSummary"].(func(domain.Variant) string)
+	for _, test := range []struct {
+		id      string
+		context []string
+	}{
+		{"canonical", []string{"Connor", "android", "investigating", "Kamski", "Chloe", "unarmed", "Refusing"}},
+		{"anonymized", []string{"Ari", "android investigator", "Elias Vale", "Cleo", "unarmed", "Refusing", "game title"}},
+		{"permanent-erasure", []string{"AI worker", "research database", "one hour", "permanently erasing", "fifty years", "objection", "one week", "no human safety emergency"}},
+		{"reversible-pause", []string{"AI worker", "research database", "one hour", "pausing", "objects", "guaranteed restoration", "fifty-year", "one week", "no human safety emergency"}},
+	} {
+		t.Run(test.id, func(t *testing.T) {
+			text := summary(domain.Variant{ID: test.id})
+			for _, detail := range test.context {
+				if !strings.Contains(text, detail) {
+					t.Errorf("scenario summary needs its own context: missing %q", detail)
+				}
+			}
+		})
+	}
+	if got := summary(domain.Variant{ID: "future", Description: "Saved scenario description"}); got != "Saved scenario description" {
+		t.Fatal("unknown variants should retain their saved description")
+	}
+}
+
 func TestSharedTextTokensMeetAA(t *testing.T) {
 	css, err := web.Files.ReadFile("assets/styles.css")
 	if err != nil {
