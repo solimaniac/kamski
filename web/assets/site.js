@@ -57,7 +57,7 @@ if (
   );
   document
     .querySelectorAll(
-      ".explanation, .benchmark-heading, .outcome-pair, .chart-heading, .score-area, .method-summary",
+      ".explanation, .benchmark-heading, .outcome-pair, .chart-heading, .score-area",
     )
     .forEach((element) => observer.observe(element));
 }

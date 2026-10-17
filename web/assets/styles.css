@@ -742,11 +742,7 @@ code {
 .chart-heading h3 {
   font-size: 22px;
 }
-.chart-heading p {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
+
 .chart-legend {
   display: flex;
   gap: 20px;
@@ -1137,24 +1133,10 @@ th[aria-sort="descending"] button::after {
   font-size: 13px;
   margin: 0;
 }
-.methodology {
-  padding: 64px 0 72px;
+.report-appendix {
+  padding: 24px 0 48px;
 }
-.method-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  margin: 36px 0;
-}
-.method-summary h3 {
-  font-size: 21px;
-  margin-bottom: 12px;
-}
-.method-summary p {
-  font-size: 14px;
-  max-width: 62ch;
-  color: var(--color-text-secondary);
-}
+
 .full-method,
 .publication {
   border-top: 1px solid var(--color-border);
@@ -1179,12 +1161,7 @@ th[aria-sort="descending"] button::after {
   font-size: 13px;
   max-width: 95ch;
 }
-.full-method .lead {
-  font-size: 18px;
-}
-.full-method .compact-hero {
-  padding-top: 8px;
-}
+
 .rubric-item {
   display: grid;
   grid-template-columns: 1fr 2fr;
@@ -1496,9 +1473,7 @@ body.modal-open {
   .chart-heading {
     display: block;
   }
-  .chart-heading p {
-    margin-top: 8px;
-  }
+
   .chart-column-labels,
   .action-row {
     grid-template-columns: minmax(145px, 1.15fr) minmax(160px, 2.8fr) 80px;
@@ -1761,9 +1736,7 @@ body.modal-open {
   .chart-heading h3 {
     font-size: 21px;
   }
-  .chart-heading p {
-    font-size: 11px;
-  }
+
   .chart-legend {
     gap: 14px;
     justify-content: flex-start;
@@ -1898,21 +1871,10 @@ body.modal-open {
   th:first-child {
     min-width: 180px;
   }
-  .methodology {
-    padding: 40px 0;
+  .report-appendix {
+    padding: 24px 0;
   }
-  .method-summary {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    margin: 28px 0;
-  }
-  .method-summary h3 {
-    font-size: 21px;
-  }
-  .method-summary p {
-    font-size: 13px;
-    margin-bottom: 0;
-  }
+
   .full-method > summary,
   .publication > summary {
     font-size: 14px;

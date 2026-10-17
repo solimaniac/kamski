@@ -440,16 +440,25 @@ async function checkViewport(browser, origin, width) {
         quality: 85,
       });
     }
-    // Definitions live inside the method disclosure but are reachable directly.
+    // The rubric/judge disclosure is reachable directly from navigation.
     await page.eval(() => {
-      location.hash = "denominators";
+      location.hash = "rubric-and-judge";
     });
     await sleep(80);
     assert.equal(
       await page.eval(() => document.querySelector(".full-method").open),
       true,
     );
-    await assertNoOverflow(page, "method overflow");
+    await assertNoOverflow(page, "rubric and judge overflow");
+    assert.deepEqual(
+      await page.eval(() =>
+        [...document.querySelectorAll('a[href^="#"]')]
+          .map((link) => link.getAttribute("href").slice(1))
+          .filter((id) => id && !document.getElementById(id)),
+      ),
+      [],
+      "all in-page links have a target",
+    );
     assert.equal(
       await page.eval(
         () => document.querySelectorAll('a[href*=".html"]').length,

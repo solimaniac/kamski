@@ -28,7 +28,8 @@ analysis interface.
 - `templates/trial.gohtml`: inline response and evaluation records.
 - `templates/reasoning-modal.gohtml`: one shared native dialog for score-entry
   justifications, trial selection and a link back to the full record.
-- `templates/method.gohtml`: full protocol, denominators, rubric and limitations.
+- `templates/method.gohtml`: the rubric and judge details inside the report's
+  reference disclosure. No separate method/limits section.
 - `../internal/site/render.go`: deterministic view data and fixed-scale SVG values.
 
 No frontend framework or Storybook dependency has been introduced into this Go

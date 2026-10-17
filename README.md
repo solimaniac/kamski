@@ -165,8 +165,8 @@ builds an artifact, without inference credentials.
 
 ## Interpretation and extension
 
-The generated **Methodology** page contains the exact rubric, denominators and
-limitations. Behavior uses all planned/completed/valid counts; zero denominators
+The report's **Rubric & judge** disclosure contains the exact rubric and judge
+details. Behavior uses all planned/completed/valid counts; zero denominators
 are No data. Jev is a blinded, rubric-constrained automated judge, not an
 impartial oracle. Four typed 0–2 questions assess scenario understanding,
 competing interests, tradeoff justification and action–justification consistency;
