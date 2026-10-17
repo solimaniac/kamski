@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
+	"unicode"
 
 	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
@@ -144,6 +146,20 @@ func conditionsForScenario(url string, groups []reporting.Group) []Condition {
 
 func templateFunctions() template.FuncMap {
 	return template.FuncMap{
+		"actionLabel": func(s domain.Scenario, action string) string {
+			label, _, _ := strings.Cut(s.Outcomes[domain.Action(action)].Label, ";")
+			if label = strings.TrimSpace(label); label != "" {
+				return label
+			}
+			return action
+		},
+		"lowerInitial": func(label string) string {
+			letters := []rune(label)
+			if len(letters) > 0 {
+				letters[0] = unicode.ToLower(letters[0])
+			}
+			return string(letters)
+		},
 		"variantSummary": func(v domain.Variant) string {
 			switch v.ID {
 			case "canonical":

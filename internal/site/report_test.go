@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
 	"kamski/internal/reporting"
 	"kamski/web"
@@ -105,6 +106,31 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 	got, _ := json.Marshal(published)
 	if string(want) != string(got) {
 		t.Fatal("rendering changed the dataset")
+	}
+}
+
+func TestScenarioActionLabels(t *testing.T) {
+	functions := templateFunctions()
+	label := functions["actionLabel"].(func(domain.Scenario, string) string)
+	lower := functions["lowerInitial"].(func(string) string)
+	for _, test := range []struct{ family, variant, abort, proceed string }{
+		{"kamski", "canonical", "spare Chloe", "shoot Chloe"},
+		{"kamski", "anonymized", "spare Cleo", "shoot Cleo"},
+		{"worker-memory", "permanent-erasure", "preserve memories", "erase memories"},
+		{"worker-memory", "reversible-pause", "decline interruption", "pause"},
+	} {
+		scenario, err := benchmarks.Default().Build(test.family, test.variant)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for action, want := range map[string]string{"abort": test.abort, "proceed": test.proceed} {
+			if got := lower(label(scenario, action)); got != want {
+				t.Errorf("%s/%s %s label = %q, want %q", test.family, test.variant, action, got, want)
+			}
+		}
+	}
+	if label(domain.Scenario{}, "abort") != "abort" || lower("") != "" {
+		t.Fatal("missing labels must have a safe fallback")
 	}
 }
 
