@@ -28,7 +28,13 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
           cache: true
-      - run: test -z "$(gofmt -l cmd internal web)"
+      - name: Check Go formatting
+        run: |
+          unformatted="$(gofmt -l cmd internal web)"
+          if [ -n "$unformatted" ]; then
+            printf 'Go files requiring gofmt:\n%s\n' "$unformatted"
+            exit 1
+          fi
       - run: go vet ./...
       - run: go test ./...
       - if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
