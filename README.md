@@ -9,6 +9,27 @@ Content note: fictional android violence.
 - `cmd/site`: explicitly export saved cohorts and build a credential-free static
   site. No inference, runtime fetches, frontend build step or application server.
 
+## Benchmark report
+
+The static export is a **single page**, `index.html`, with a spoiler warning and
+an explanation of the Kamski encounter before the results. Kamski and worker-memory
+scenarios each have a native radio group for their variants. Without JavaScript,
+all variants remain readable in sequence.
+
+Action bars use **all planned trials** so failures stay visible. The expandable
+evidence tables also report action rates among valid decisions and their exact
+sample counts. Justification bars use the fixed 0–8 scale; different conditions,
+sources and judge/rubric snapshots stay separate. Individual responses, selected
+evaluation IDs, histories and provenance are inline disclosures rather than
+separate pages. Trial anchors open their parent disclosures automatically.
+
+`web/assets/styles.css` contains shared Detroit-inspired light-flowchart tokens.
+Exo 2 and Inter ship locally under the SIL Open Font License (license files sit
+beside the fonts). The site has no runtime fetches, third-party scripts or game
+assets, works from `file://`, and respects reduced motion. `dataset.json` remains
+the full-precision evidence download. See `web/DESIGN.md` for the visual decisions
+and browser checks below for interaction coverage.
+
 ## Start offline
 
 Use a currently supported, patched Go toolchain. `go.mod` recommends Go 1.27.2
@@ -198,9 +219,12 @@ RENDER_REVIEW_DIR="$PWD/.benchmark-data/browser-demo" go test ./internal/app/sit
 TASTE_SKILL='C:/Users/ahmed/.pi/agent/skills/design-taste-frontend' node scripts/browser-check.mjs .benchmark-data/browser-demo
 ```
 
-The typography-only research UI adapts tasteskill v2's marketing imagery/motion
-quotas; wide/narrow synthetic views and interaction checks were reviewed. No
-unqualified marketing-skill compliance or live benchmark findings are claimed.
+The browser script checks 1440, 768, 390 and 320px layouts, keyboard variant
+selection, inline evidence, sorting, trial deep links, local fonts, no-script and
+file-system fallbacks, and reduced motion. It saves screenshots under
+`.taste-skill/redesign/`. The supplied Detroit UI system takes precedence over
+tasteskill's marketing imagery quotas and its bans on hairlines/system labels;
+no unqualified marketing-skill compliance is claimed.
 
 References: [tool calling](https://openrouter.ai/docs/guides/features/tool-calling),
 [Jev](https://openrouter.ai/docs/guides/community/jev),
