@@ -1,2 +1,3 @@
-# gofmt emits LF; keep Go source identical on Windows and Unix checkouts.
-*.go text eol=lf
+# Keep source, embedded prompts, and golden snapshots byte-identical across OSes.
+# Binary files remain binary through Git's automatic text detection.
+* text=auto eol=lf

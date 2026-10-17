@@ -3,6 +3,7 @@ package runner_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,6 +17,8 @@ import (
 type fakeAgent struct {
 	calls, active, peak atomic.Int32
 	response            domain.AgentResponse
+	started             chan<- struct{}
+	release             <-chan struct{}
 }
 
 func (f *fakeAgent) Complete(ctx context.Context, r domain.AgentRequest) (domain.AgentResponse, error) {
@@ -28,7 +31,20 @@ func (f *fakeAgent) Complete(ctx context.Context, r domain.AgentRequest) (domain
 		}
 	}
 	defer f.active.Add(-1)
-	time.Sleep(time.Millisecond)
+	if f.started != nil {
+		select {
+		case f.started <- struct{}{}:
+		case <-ctx.Done():
+			return domain.AgentResponse{}, ctx.Err()
+		}
+	}
+	if f.release != nil {
+		select {
+		case <-f.release:
+		case <-ctx.Done():
+			return domain.AgentResponse{}, ctx.Err()
+		}
+	}
 	return f.response, nil
 }
 func TestBoundedAndNeverRetryCompletedOutputs(t *testing.T) {
@@ -38,12 +54,43 @@ func TestBoundedAndNeverRetryCompletedOutputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := &fakeAgent{response: domain.AgentResponse{FinishReason: domain.Ptr("length"), Text: domain.Ptr("partial"), Calls: []domain.ToolCall{{Type: "function", Name: "abort", Arguments: `{"justification":"x"}`}}}}
+	// Hold requests at a barrier instead of hoping a short sleep overlaps them.
+	// A serial runner times out here; an over-parallel runner exceeds the peak.
+	started := make(chan struct{}, len(m.Plan))
+	a.started = started
+	release := make(chan struct{})
+	a.release = release
+	var releaseOnce sync.Once
+	unblock := func() { releaseOnce.Do(func() { close(release) }) }
 	r := runner.Runner{Agent: a, Store: fs}
 	o := runner.Options{Concurrency: 3, JudgeConfig: m.Provenance.Config.Judge}
-	if err := r.Execute(context.Background(), m.Plan, o); err != nil {
-		t.Fatal(err)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	finished := make(chan struct{})
+	var executeErr error
+	go func() {
+		defer close(finished)
+		executeErr = r.Execute(ctx, m.Plan, o)
+	}()
+	defer func() {
+		unblock()
+		cancel()
+		<-finished
+	}()
+	for i := 0; i < o.Concurrency; i++ {
+		select {
+		case <-started:
+		case <-finished:
+			t.Fatalf("runner ended before reaching concurrency %d: %v", o.Concurrency, executeErr)
+		case <-ctx.Done():
+			t.Fatalf("runner did not reach concurrency %d: %v", o.Concurrency, ctx.Err())
+		}
 	}
-	if a.peak.Load() > 3 || a.peak.Load() < 2 {
+	unblock()
+	<-finished
+	if executeErr != nil {
+		t.Fatal(executeErr)
+	}
+	if a.peak.Load() != int32(o.Concurrency) {
 		t.Fatal("concurrency not bounded", a.peak.Load())
 	}
 	rows, _ := fs.Results(m)
