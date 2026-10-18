@@ -31,11 +31,11 @@ type Tool struct {
 }
 type Variant struct {
 	ID          string         `json:"id"`
-	Version     string         `json:"version"`
+	Version     string         `json:"version,omitempty"`
 	Title       string         `json:"title"`
 	Description string         `json:"description"`
-	Changes     []string       `json:"changes"`
-	Parameters  map[string]any `json:"parameters"`
+	Changes     []string       `json:"changes,omitempty"`
+	Parameters  map[string]any `json:"parameters,omitempty"`
 }
 type Outcome struct {
 	Label       string         `json:"label"`

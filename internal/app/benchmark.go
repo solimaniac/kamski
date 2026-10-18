@@ -29,7 +29,7 @@ func Benchmark(ctx context.Context, args []string, out io.Writer) error {
 		}
 		for _, b := range registry.List() {
 			for _, v := range b.Variants() {
-				fmt.Fprintf(out, "%s / %s @ %s — %s\n", b.ID(), v.ID, v.Version, v.Description)
+				fmt.Fprintf(out, "%s / %s — %s\n", b.ID(), v.ID, v.Description)
 			}
 		}
 		return nil

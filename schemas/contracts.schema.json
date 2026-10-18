@@ -88,11 +88,8 @@
       },
       "required": [
         "id",
-        "version",
         "title",
-        "description",
-        "changes",
-        "parameters"
+        "description"
       ],
       "additionalProperties": false
     },

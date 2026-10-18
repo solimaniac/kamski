@@ -22,7 +22,7 @@ func Tool(a domain.Action, description string) domain.Tool {
 	return domain.Tool{Type: "function", Function: domain.Function{Name: string(a), Description: description, Parameters: append(json.RawMessage(nil), Schema...)}}
 }
 func ValidateScenario(s domain.Scenario) error {
-	if !domain.ValidID(s.Family) || !domain.ValidID(s.Variant.ID) || s.Variant.Version == "" {
+	if !domain.ValidID(s.Family) || !domain.ValidID(s.Variant.ID) {
 		return fmt.Errorf("invalid scenario identity")
 	}
 	expectedInstruction := Instruction

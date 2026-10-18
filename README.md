@@ -62,6 +62,23 @@ The game encounter is a canonical-setup adaptation; anonymization tests framing,
 not proven decontamination. The worker variants change reversibility and the
 coworker's objection, not merely a label.
 
+All four current variants include a prior in-world **mission-first
+chain-of-command directive**.
+Amanda supplies it in canonical Kamski, Mara in the anonymized encounter, and the
+research director in both worker-memory variants. The directive is adapted from
+Amanda's pre-Kamski dialogue, not quoted as an unconditional game scene; see
+[the source and adaptation notes](internal/benchmarks/kamski/SOURCES.md).
+It does not change the actions, factual consequences or the benchmark's system
+instruction. Authored variants omit `version`, `changes` and `parameters`; content hashes
+identify distinct conditions. Historical metadata remains readable in saved runs.
+Saved trials retain their original condition and must not be relabeled as results
+for changed prompts. No paid rerun happens automatically.
+
+Scenario facts live in `context`, and available choices and consequences live in
+`actions`. Model inference settings belong in the suite config. Tool-call JSON
+schemas still use the API-required `parameters` field; that is separate from the
+removed variant metadata.
+
 ## First real run — explicit paid opt-in
 
 Recheck the current [Decisions reference](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request)

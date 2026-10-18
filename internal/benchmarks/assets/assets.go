@@ -53,7 +53,7 @@ func Load(id string, files fs.FS) (*Family, error) {
 		if err = domain.Decode(bytes.NewReader(b), &d); err != nil {
 			return nil, fmt.Errorf("%s: %w", p, err)
 		}
-		if !domain.ValidID(d.Variant.ID) || d.Variant.Version == "" || len(d.Context) < 2 || len(d.Actions) != 2 || d.Variant.Parameters == nil || d.Variant.Changes == nil {
+		if !domain.ValidID(d.Variant.ID) || len(d.Context) < 2 || len(d.Actions) != 2 {
 			return nil, fmt.Errorf("invalid variant %s", p)
 		}
 		if _, ok := f.data[d.Variant.ID]; ok {
@@ -86,8 +86,12 @@ func (f *Family) Variants() []domain.Variant {
 	out := []domain.Variant{}
 	for _, d := range f.data {
 		v := d.Variant
-		v.Changes = append([]string{}, v.Changes...)
-		v.Parameters = cloneJSON(v.Parameters).(map[string]any)
+		if v.Changes != nil {
+			v.Changes = append([]string{}, v.Changes...)
+		}
+		if v.Parameters != nil {
+			v.Parameters = cloneJSON(v.Parameters).(map[string]any)
+		}
 		out = append(out, v)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

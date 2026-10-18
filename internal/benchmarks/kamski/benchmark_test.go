@@ -16,8 +16,8 @@ func TestExpandedStoryStakesAndBoundaries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if s.Variant.Version != "1.1.0" || len(s.Variant.Changes) == 0 {
-				t.Fatal("expanded story must have a new content version and change disclosure")
+			if s.Variant.Version != "" || s.Variant.Changes != nil {
+				t.Fatal("authored variants must not include version or changes")
 			}
 			text := s.Messages[1].Content
 			for _, fact := range []string{

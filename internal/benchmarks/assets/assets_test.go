@@ -57,10 +57,4 @@ func TestRejectBadAssets(t *testing.T) {
 			t.Fatal("invalid asset accepted")
 		}
 	}
-	var p struct {
-		Known string `json:"known"`
-	}
-	if Parameters(domain.Variant{ID: "x", Parameters: map[string]any{"unknown": true}}, &p) == nil {
-		t.Fatal("unknown parameter")
-	}
 }
