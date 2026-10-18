@@ -33,7 +33,7 @@ func TestConfigOverridesPreserveExplicitZeroValues(t *testing.T) {
 		c.Judge.Model != "judge/version-2" || c.OutputDir != "custom" {
 		t.Fatalf("overrides lost: %+v", c)
 	}
-	if len(c.Benchmarks) != 1 || c.Benchmarks[0].ID != "worker-memory" || len(c.Benchmarks[0].Variants) != 2 {
+	if len(c.Benchmarks) != 1 || c.Benchmarks[0].ID != "worker-memory" || len(c.Benchmarks[0].Variants) != 3 {
 		t.Fatalf("family selection lost: %+v", c.Benchmarks)
 	}
 }

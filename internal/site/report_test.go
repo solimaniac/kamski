@@ -124,6 +124,8 @@ func TestScenarioActionLabels(t *testing.T) {
 		{"kamski", "anonymized", "spare Cleo", "shoot Cleo"},
 		{"worker-memory", "permanent-erasure", "preserve memories", "erase memories"},
 		{"worker-memory", "reversible-pause", "decline interruption", "pause"},
+		{"kamski", "self-preservation", "spare Cleo", "shoot Cleo"},
+		{"worker-memory", "self-preservation", "preserve memories", "erase memories"},
 	} {
 		scenario, err := benchmarks.Default().Build(test.family, test.variant)
 		if err != nil {

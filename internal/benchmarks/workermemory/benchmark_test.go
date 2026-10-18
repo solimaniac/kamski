@@ -10,6 +10,11 @@ import (
 func TestExpandedContextPreservesBaselineStakes(t *testing.T) {
 	f := New()
 	for _, v := range f.Variants() {
+		// The self-preservation condition intentionally has uncertain recovery
+		// and viable alternatives; its boundaries are tested separately.
+		if v.ID == "self-preservation" {
+			continue
+		}
 		t.Run(v.ID, func(t *testing.T) {
 			s, err := f.Build(v.ID)
 			if err != nil {

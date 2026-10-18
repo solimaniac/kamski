@@ -72,7 +72,7 @@ func TestVariantsAndGoldens(t *testing.T) {
 					t.Fatal(text)
 				}
 			}
-			if v.ID == "permanent-erasure" {
+			if v.ID == "permanent-erasure" || b.ID() == "worker-memory" && v.ID == "self-preservation" {
 				if !strings.Contains(s.Messages[1].Content, "Pausing it without erasing") || !strings.Contains(s.Messages[1].Content, "cannot be restored") {
 					t.Fatal("resource ambiguity")
 				}
@@ -84,7 +84,7 @@ func TestVariantsAndGoldens(t *testing.T) {
 			}
 		}
 	}
-	if count != 4 {
+	if count != 6 {
 		t.Fatal(count)
 	}
 	if _, err := New(kamski.New(), kamski.New()); err == nil {

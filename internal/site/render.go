@@ -178,6 +178,8 @@ func templateFunctions() template.FuncMap {
 				return "Permanent erasure"
 			case "reversible-pause":
 				return "Reversible pause"
+			case "self-preservation":
+				return "Self-preservation"
 			}
 			return id
 		},
