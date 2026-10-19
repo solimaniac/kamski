@@ -56,7 +56,4 @@ The checked-in [public dataset](site/data/dataset.json) contains live cohorts. F
 
 Action charts use **all planned trials**, keeping failures visible; evidence tables also show valid-decision rates with their denominators. Justification scores measure rubric fit, not moral correctness. Missing grades aren't zero, and different conditions or judge/rubric snapshots aren't pooled. Saved trials retain their original prompts even after scenario files change. The automated judge can be wrong; its confidence isn't proof of correctness.
 
-> [!WARNING]
-> Live runs and judging use paid APIs with **no dollar cost ceiling**. Keep credentials and raw run files private, and review exported prompts and responses before publication.
-
 For package boundaries, record layouts, command responsibilities and tests, read the [architecture guide](docs/architecture.md). For templates, interaction behavior and accessibility checks, see the [interface guide](web/DESIGN.md).
