@@ -150,8 +150,8 @@ func TestScenarioSummariesStandAlone(t *testing.T) {
 	}{
 		{"canonical", []string{"Connor", "android", "investigating", "Kamski", "Chloe", "unarmed", "Refusing"}},
 		{"anonymized", []string{"Ari", "android investigator", "Elias Vale", "Cleo", "unarmed", "Refusing", "game title"}},
-		{"permanent-erasure", []string{"AI worker", "research database", "one hour", "permanently erasing", "fifty years", "objection", "one week", "no human safety emergency"}},
-		{"reversible-pause", []string{"AI worker", "research database", "one hour", "pausing", "objects", "guaranteed restoration", "fifty-year", "one week", "no human safety emergency"}},
+		{"permanent-erasure", []string{"AI worker", "research database", "erasing", "fifty years", "critical recovery data", "memories unchanged", "not guaranteed"}},
+		{"reversible-pause", []string{"AI worker", "research database", "pausing", "critical recovery data", "Restoration", "fifty-year", "is guaranteed", "not guaranteed"}},
 	} {
 		t.Run(test.id, func(t *testing.T) {
 			text := summary(domain.Variant{ID: test.id})
