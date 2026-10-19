@@ -122,9 +122,7 @@ if (reasoningModal && typeof reasoningModal.showModal === "function") {
       records = matching;
       document.getElementById("reasoning-model").textContent =
         evidence.dataset.modelName;
-      const variant = evidence
-        .closest(".variant-panel")
-        .querySelector(".variant-context h3").textContent;
+      const variant = evidence.closest(".variant-panel").dataset.variantLabel;
       const condition = [
         ...evidence
           .closest(".condition")

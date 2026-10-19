@@ -488,12 +488,6 @@ strong {
   gap: 12px;
   font-size: 12px;
 }
-.flow-footnote {
-  text-align: center;
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin: 12px 0 0;
-}
 
 .explanation {
   border-top: 1px solid var(--color-border);
@@ -553,20 +547,16 @@ code {
   border-bottom: 1px solid var(--color-border);
 }
 .benchmark-heading {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: end;
   margin-bottom: 32px;
 }
 .benchmark-heading .technical {
   margin-bottom: 12px;
 }
-.benchmark-heading > p {
-  max-width: 58ch;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  margin: 0 0 3px;
+.benchmark-heading .scenario-description {
+  max-width: 85ch;
+  font-size: 16px;
+  color: var(--color-text);
+  margin: 20px 0 0;
 }
 .enhanced .variant-selector {
   display: flex;
@@ -648,10 +638,22 @@ code {
   margin-bottom: 8px;
 }
 .variant-context p {
-  font-size: 14px;
-  max-width: 90ch;
-  color: var(--color-text-secondary);
+  font-size: 16px;
+  max-width: 85ch;
+  color: var(--color-text);
   margin: 0;
+}
+.variant-context p + p {
+  margin-top: 12px;
+}
+.variant-prompts {
+  margin: 0 0 24px;
+}
+.prompt-version + .prompt-version {
+  margin-top: 32px;
+}
+.prompt-version h4 {
+  overflow-wrap: anywhere;
 }
 .variant-context > .technical {
   white-space: nowrap;
@@ -1455,9 +1457,6 @@ body.modal-open {
     grid-template-columns: minmax(145px, 1.15fr) minmax(160px, 2.8fr) 80px;
     gap: 16px;
   }
-  .benchmark-heading {
-    gap: 40px;
-  }
   .results-divider > .technical {
     font-size: 10px;
   }
@@ -1578,9 +1577,6 @@ body.modal-open {
   .flow-end {
     font-size: 11px;
   }
-  .flow-footnote {
-    font-size: 10px;
-  }
 
   .explanation {
     display: block;
@@ -1628,10 +1624,6 @@ body.modal-open {
   .benchmark-heading h2 {
     font-size: 29px;
   }
-  .benchmark-heading > p {
-    font-size: 12px;
-    margin-top: 20px;
-  }
   .benchmark-heading .technical {
     font-size: 10px;
   }
@@ -1660,9 +1652,6 @@ body.modal-open {
   }
   .variant-context h3 {
     font-size: 19px;
-  }
-  .variant-context p {
-    font-size: 13px;
   }
   .variant-context > .technical {
     display: block;

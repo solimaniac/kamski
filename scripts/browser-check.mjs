@@ -21,6 +21,7 @@ const mimeTypes = {
   ".js": "text/javascript",
   ".json": "application/json",
   ".ttf": "font/ttf",
+  ".svg": "image/svg+xml",
 };
 const dataset = JSON.parse(readFileSync(join(root, "dataset.json"), "utf8"));
 
@@ -86,6 +87,7 @@ async function checkReasoningModal(page, width) {
     trigger.focus();
     return {
       model: evidence.dataset.modelName,
+      variant: evidence.closest(".variant-panel").dataset.variantLabel,
       group: trigger.dataset.modelGroup,
       records: records.map((record) => ({
         id: record.id,
@@ -107,6 +109,11 @@ async function checkReasoningModal(page, width) {
       () => document.querySelector("#reasoning-model").textContent,
     ),
     expected.model,
+  );
+  assert.equal(
+    await page.eval(() => document.querySelector("#reasoning-context").textContent.split(" / ")[0]),
+    expected.variant,
+    "modal retains the variant name rather than the Description heading",
   );
   assert.equal(
     await page.eval(
@@ -293,6 +300,42 @@ async function checkViewport(browser, origin, width) {
       "local fonts loaded",
     );
     await assertNoOverflow(page, "initial document overflow");
+    assert.equal(await page.eval(() => document.title), "The Kamski test");
+    assert.equal(
+      await page.eval(() => document.querySelector('link[rel="icon"]').getAttribute("href")),
+      "favicon.svg",
+    );
+    assert.equal(
+      await page.eval(() => document.querySelectorAll(".system-header nav a > .nav-square").length),
+      2,
+    );
+    assert.equal(
+      await page.eval(() => document.querySelector(".system-header").textContent.includes("LOCAL DATA")),
+      false,
+    );
+    for (const family of ["kamski", "worker-memory"]) {
+      const variants = await page.eval((family) =>
+        [...document.querySelectorAll(`#${family} .variant-selector input`)].map(input => input.value), family);
+      for (const variant of variants) {
+        await page.eval(({family, variant}) => {
+          const input = document.querySelector(`#${family} input[value="${variant}"]`);
+          input.click();
+          const panel = document.getElementById(input.getAttribute("aria-controls"));
+          panel.querySelector(".variant-prompts > summary").click();
+        }, {family, variant});
+        assert.equal(await page.eval(({family, variant}) => {
+          const panel = document.querySelector(`#variant-${family}-${variant}`);
+          return panel.querySelector(".variant-context h3").textContent === "Description" &&
+            panel.querySelector(".variant-prompts").open &&
+            panel.querySelector(".prompt-version .verbatim").textContent.length > 0;
+        }, {family, variant}), true, "every variant exposes its full prompt");
+        await assertNoOverflow(page, "expanded variant prompt overflow");
+        await page.eval(({family, variant}) => {
+          document.querySelector(`#variant-${family}-${variant} .variant-prompts > summary`).click();
+        }, {family, variant});
+      }
+      await page.eval((family) => document.querySelector(`#${family} .variant-selector input`).click(), family);
+    }
     assert.equal(
       await page.eval(
         () => document.querySelector(".system-header .repository-link").href,
@@ -532,7 +575,8 @@ async function checkFallbacks(browser, origin) {
       await page.eval(
         () => document.querySelectorAll(".variant-panel:not([hidden])").length,
       ),
-      4,
+      await page.eval(() => document.querySelectorAll(".variant-panel").length),
+      "without JavaScript every variant remains visible",
     );
     assert.equal(
       await page.eval(

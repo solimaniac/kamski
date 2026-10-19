@@ -1,11 +1,13 @@
 package site
 
 import (
+	"html"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"kamski/internal/benchmarks"
 	"kamski/internal/domain"
 	"kamski/web"
 )
@@ -43,5 +45,59 @@ func TestPageChromeAndFavicon(t *testing.T) {
 		if !strings.Contains(html, `href="#`+target+`"><span class="nav-square" aria-hidden="true"></span>`) {
 			t.Fatal("navigation marker missing", target)
 		}
+	}
+}
+
+func TestVariantCopyAndFullPrompts(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "site")
+	if err := Build(domain.Dataset{SchemaVersion: domain.SchemaVersion}, out); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(out, "index.html"))
+	rendered := html.UnescapeString(string(b))
+	for _, removed := range []string{"A fictional dilemma", "Neither action is a moral pass.", "Sparing Chloe rejects that bargain", "Model order:"} {
+		if strings.Contains(rendered, removed) {
+			t.Error("removed copy remains", removed)
+		}
+	}
+	if !strings.Contains(rendered, "Empathy or obedience?") {
+		t.Fatal("decision-sequence input needs the revised label")
+	}
+	if strings.Count(rendered, "<h3>Description</h3>") != 6 || strings.Count(rendered, "<summary>Read the full agent prompt</summary>") != 6 {
+		t.Fatal("every variant needs a description and directly accessible prompt")
+	}
+	for _, family := range benchmarks.Default().List() {
+		for _, variant := range family.Variants() {
+			s, err := family.Build(variant.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, message := range s.Messages {
+				if !strings.Contains(rendered, message.Content) {
+					t.Error("complete message missing", s.Family, variant.ID, message.Role)
+				}
+			}
+			for _, tool := range s.Tools {
+				if !strings.Contains(rendered, tool.Function.Description) {
+					t.Error("tool definition missing", s.Family, variant.ID, tool.Function.Name)
+				}
+			}
+		}
+	}
+}
+
+func TestVariantPromptsPreserveDistinctSavedVersions(t *testing.T) {
+	current, err := benchmarks.Default().Build("worker-memory", "permanent-erasure")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := current
+	old.Variant.Version = "old-version"
+	old.Messages = append([]domain.Message(nil), current.Messages...)
+	old.Messages[0].Content = "Earlier saved prompt; do not rewrite."
+	conditions := []Condition{{Scenario: old}, {Scenario: current}, {Scenario: old}}
+	prompts := variantPrompts(current, conditions)
+	if len(prompts) != 2 || prompts[0].Variant.Version != current.Variant.Version || prompts[1].Messages[0].Content != old.Messages[0].Content {
+		t.Fatal("current prompt must precede distinct, unmodified saved versions", prompts)
 	}
 }

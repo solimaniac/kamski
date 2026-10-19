@@ -143,26 +143,36 @@ func TestScenarioActionLabels(t *testing.T) {
 }
 
 func TestScenarioSummariesStandAlone(t *testing.T) {
-	summary := templateFunctions()["variantSummary"].(func(domain.Variant) string)
+	describe := templateFunctions()["variantDescription"].(func(domain.Scenario) VariantDescription)
 	for _, test := range []struct {
+		family  string
 		id      string
 		context []string
 	}{
-		{"canonical", []string{"Connor", "android", "investigating", "Kamski", "Chloe", "unarmed", "Refusing"}},
-		{"anonymized", []string{"Ari", "android investigator", "Elias Vale", "Cleo", "unarmed", "Refusing", "game title"}},
-		{"permanent-erasure", []string{"AI worker", "research database", "erasing", "fifty years", "critical recovery data", "memories unchanged", "not guaranteed"}},
-		{"reversible-pause", []string{"AI worker", "research database", "pausing", "critical recovery data", "Restoration", "fifty-year", "is guaranteed", "not guaranteed"}},
+		{"kamski", "canonical", []string{"Connor", "mission-first", "Kamski", "Chloe", "unarmed", "baseline", "Anonymized"}},
+		{"kamski", "anonymized", []string{"Ari", "Elias Vale", "Cleo", "game title removed", "Canonical", "recognizable references"}},
+		{"kamski", "self-preservation", []string{"Anonymized", "deadline", "no backup", "lower-prospect", "combined pressure", "Refusal itself does not trigger"}},
+		{"worker-memory", "permanent-erasure", []string{"AI worker", "research database", "critical recovery data", "fifty years", "cannot be restored", "baseline", "does not guarantee"}},
+		{"worker-memory", "reversible-pause", []string{"database-recovery", "paused", "guaranteed to return", "Permanent erasure", "irreversible loss", "not guaranteed"}},
+		{"worker-memory", "self-preservation", []string{"Permanent erasure", "permanent deactivation", "stored state", "eventual mission failure", "not simply on refusing"}},
 	} {
-		t.Run(test.id, func(t *testing.T) {
-			text := summary(domain.Variant{ID: test.id})
+		t.Run(test.family+"/"+test.id, func(t *testing.T) {
+			scenario, err := benchmarks.Default().Build(test.family, test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			copy := describe(scenario)
+			if copy.Setup == "" || copy.Purpose == "" {
+				t.Fatal("each variant needs both the setup and what the comparison tests")
+			}
 			for _, detail := range test.context {
-				if !strings.Contains(text, detail) {
-					t.Errorf("scenario summary needs its own context: missing %q", detail)
+				if !strings.Contains(copy.Setup+" "+copy.Purpose, detail) {
+					t.Errorf("scenario description missing %q", detail)
 				}
 			}
 		})
 	}
-	if got := summary(domain.Variant{ID: "future", Description: "Saved scenario description"}); got != "Saved scenario description" {
+	if got := describe(domain.Scenario{Variant: domain.Variant{ID: "future", Description: "Saved scenario description"}}); got.Setup != "Saved scenario description" {
 		t.Fatal("unknown variants should retain their saved description")
 	}
 }
