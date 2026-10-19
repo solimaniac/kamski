@@ -22,7 +22,7 @@ func TestPageChromeAndFavicon(t *testing.T) {
 		t.Fatal(err)
 	}
 	html := string(b)
-	if !strings.Contains(html, "<title>The Kamski test</title>") || strings.Contains(html, "A model behavior benchmark") {
+	if !strings.Contains(html, "<title>The Kamski Test</title>") || strings.Contains(html, "A model behavior benchmark") {
 		t.Fatal("browser title must contain only the page name")
 	}
 	if !strings.Contains(html, `rel="icon" type="image/svg+xml" href="favicon.svg"`) {

@@ -122,7 +122,7 @@ func renderPages(d domain.Dataset, stage string) error {
 			return x < y
 		})
 	}
-	return render("index.html", Page{Title: "The Kamski test", Families: families})
+	return render("index.html", Page{Title: "The Kamski Test", Families: families})
 }
 
 func conditionsForScenario(url string, groups []reporting.Group) []Condition {

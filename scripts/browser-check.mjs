@@ -300,7 +300,7 @@ async function checkViewport(browser, origin, width) {
       "local fonts loaded",
     );
     await assertNoOverflow(page, "initial document overflow");
-    assert.equal(await page.eval(() => document.title), "The Kamski test");
+    assert.equal(await page.eval(() => document.title), "The Kamski Test");
     assert.equal(
       await page.eval(() => document.querySelector('link[rel="icon"]').getAttribute("href")),
       "favicon.svg",
