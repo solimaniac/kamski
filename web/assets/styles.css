@@ -202,17 +202,11 @@ input:focus-visible + span,
   background: var(--color-primary-light);
   color: var(--color-link);
 }
-.system-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-}
-.system-status i {
+.nav-square {
+  flex: 0 0 5px;
   height: 5px;
   width: 5px;
+  margin-right: 8px;
   background: var(--color-primary-active);
 }
 main,
@@ -1428,9 +1422,6 @@ body.modal-open {
   }
 }
 @media (max-width: 1050px) {
-  .system-status {
-    display: none;
-  }
   .hero {
     gap: 24px;
   }

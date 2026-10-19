@@ -52,7 +52,7 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 			t.Errorf("removed reference copy remains: %s", removed)
 		}
 	}
-	if strings.Contains(html, `class="dataset-strip"`) || !strings.Contains(html, `<a href="#benchmark-results">Benchmark results</a>`) {
+	if strings.Contains(html, `class="dataset-strip"`) || !strings.Contains(html, `<a href="#benchmark-results"><span class="nav-square" aria-hidden="true"></span>Benchmark results</a>`) {
 		t.Fatal("summary strip must be removed and the header must link to benchmark results")
 	}
 	if strings.Contains(html, `<a href="#kamski">Kamski</a>`) || strings.Contains(html, `<a href="#worker-memory">Worker memory</a>`) {
