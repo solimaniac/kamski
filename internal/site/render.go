@@ -136,6 +136,14 @@ func conditionsForScenario(url string, groups []reporting.Group) []Condition {
 		conditions[i].Groups = append(conditions[i].Groups, g)
 	}
 
+	for i := range conditions {
+		sort.SliceStable(conditions[i].Groups, func(a, b int) bool {
+			return intelligenceLess(conditions[i].Groups[a], conditions[i].Groups[b])
+		})
+		for j := range conditions[i].Groups {
+			sortRepetitions(conditions[i].Groups[j].Trials)
+		}
+	}
 	return conditions
 }
 
@@ -226,6 +234,7 @@ func templateFunctions() template.FuncMap {
 			}
 			return result.Scenario.Outcomes[*result.Decision.Action].Label
 		},
+		"scoreRows":  scoreRows,
 		"short":      short,
 		"selected":   reporting.Selected,
 		"scoringKey": reporting.ScoringKey,
