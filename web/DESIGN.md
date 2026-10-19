@@ -1,90 +1,52 @@
-# Kamski report interface
+# Report interface
 
-## Direction
+[Repository guide](../README.md) · [Architecture](../docs/architecture.md)
 
-The requested Detroit: Become Human light-flowchart system controls this design,
-not a generic marketing-page layout. On this page, the Kamski bargain becomes a
-branching decision sequence; the same blue path language carries into the action
-charts. Variant radio groups are the main interaction. No tabs, routes, store
-layout, artificial loading states or inference controls.
+The report borrows the light flowchart language of *Detroit: Become Human*: pale angled surfaces, fine connectors, square decision nodes and blue selected paths. The aim is to make a branching experiment legible, not to imitate a game screen or turn the evidence into a leaderboard.
 
-The references were the game's chapter interface on
-[Interface In Game](https://interfaceingame.com/games/detroit-become-human/),
-Quantic Dream's [flowchart description](https://www.quanticdream.com/en/detroit-become-human/flowcharts),
-and the supplied design system. The pale angled planes, fine connectors, square
-nodes, tracked system labels and blue selected states are deliberate requirements.
-These override the frontend taste skill's default bans on those devices. The
-report uses its own SVG diagrams rather than game screenshots or decorative stock
-photographs. There is no dark mode because no section needs a separate immersive
-analysis interface.
+Visual references are the game's chapter interface on [Interface In Game](https://interfaceingame.com/games/detroit-become-human/) and Quantic Dream's [flowchart description](https://www.quanticdream.com/en/detroit-become-human/flowcharts). Diagrams are original SVGs; no game screenshots or other game assets are bundled. Exo 2 and Inter are served locally, with SIL Open Font License files beside them in `assets/`.
 
-## Files
+## Where to make changes
 
-- `assets/styles.css`: shared surface, color, font, spacing and motion tokens,
-  component styles, phone layout and reduced-motion fallback.
-- `assets/site.js`: native-radio progressive enhancement, disclosure deep links,
-  table sorting and brief directional entrances. No network calls.
-- `templates/index.gohtml`: warning, context, grouped variants, charts and evidence.
-- `templates/trial.gohtml`: inline response and evaluation records.
-- `templates/reasoning-modal.gohtml`: one shared native dialog for score-entry
-  justifications, trial selection and a link back to the full record.
-- `templates/method.gohtml`: the rubric and judge details inside the report's
-  reference disclosure. No separate method/limits section.
-- `../internal/site/render.go`: deterministic view data and fixed-scale SVG values.
+Paths in this table are relative to `web/`.
 
-No frontend framework or Storybook dependency has been introduced into this Go
-static-site project. The report itself renders the system's buttons, radio
-choices, disclosures, plots and tables. A separate component library would need
-its own scope if these controls move into the host blog.
+| File | Responsibility |
+| --- | --- |
+| [`assets/styles.css`](assets/styles.css) | Shared colors, typography, spacing, components, responsive layout and reduced-motion rules. |
+| [`assets/site.js`](assets/site.js) | Variant selection, disclosure deep links, table sorting, justification dialogs and brief entrance motion. No network calls. |
+| [`templates/base.gohtml`](templates/base.gohtml) | Shared document shell and asset references. |
+| [`templates/index.gohtml`](templates/index.gohtml) | Spoiler warning, scenario context, variant groups, charts and evidence. |
+| [`templates/trial.gohtml`](templates/trial.gohtml) | Inline responses, provenance and evaluation records. |
+| [`templates/reasoning-modal.gohtml`](templates/reasoning-modal.gohtml) | Shared native dialog for saved justifications and trial selection. |
+| [`templates/method.gohtml`](templates/method.gohtml) | Exact rubric and judge details in the report's reference disclosure. |
+| [`../internal/site/render.go`](../internal/site/render.go) | Deterministic view data, chart values and template preparation. |
+| [`embed.go`](embed.go) | Assets and templates embedded into the Go program. |
 
-## Data rules
+There is one report page, with no frontend framework, client-side routing, inference controls or separate component library. The public dataset is the source of evidence; rendering must not rewrite it.
 
-Action bars use planned trials, not just successful decisions. Their labels give
-abort/proceed/missing counts and valid/planned coverage. Evidence tables retain
-the original valid-decision denominators and explain the difference. Score bars
-use 0–8, never rescale to the best model. Counts and accessible text accompany the
-colors. Scores from different judge/rubric snapshots remain separate rows.
-Empty data is an explicit empty state, not a zero result.
+## Presentation rules
 
-Each score entry opens the model's saved tool justification in a native dialog.
-The selector includes only trials for the same model, condition, source and
-selected scoring snapshot. Ungraded entries instead offer all of that group's
-saved responses, with missing justifications or scores marked explicitly. The
-modal copies text from existing evidence with `textContent`; it neither fetches
-new data nor interprets model output as HTML. Other visible response text stays
-in a separate disclosure. The interface doesn't call these records hidden
-internal reasoning.
+- **Keep failures visible.** Action bars use all planned trials and label abort, proceed and missing counts. Evidence tables also expose valid-decision rates with their different denominators.
+- **Keep the score scale fixed.** Justification charts use 0–8, never the best observed model score. Different judge/rubric snapshots remain separate rows.
+- **Do not turn absence into a result.** Empty data is an explicit empty state, not a zero score or an implicit refusal.
+- **Show the record behind the summary.** Closed evidence disclosures must not hide the main results. Each trial has a deep link and keeps its original response and evaluation history.
+- **Use plain explanatory copy.** Report introductions explain the scenario directly. Saved prompts, responses and metadata remain evidence even when their wording differs from the surrounding prose.
+- **Never label returned explanations as hidden reasoning.** The dialog displays the recorded tool justification. Other visible assistant text stays in its own disclosure.
 
-The introduction and variant summaries use direct explanatory copy, following
-[anti-ai-slop-writing](https://github.com/jalaalrd/anti-ai-slop-writing). Saved
-prompts, model responses and benchmark metadata remain verbatim evidence, even
-when they use a different voice. The downloadable dataset is unchanged by render.
+A score entry's dialog contains only trials from the same model, condition, source and selected scoring snapshot. Ungraded entries offer that group's saved responses and label missing scores or justifications explicitly. The dialog copies existing evidence with `textContent`; it neither fetches data nor interprets model output as HTML.
 
-## Access and validation
+## Interaction and accessibility
 
-Native fieldsets, legends and radios provide keyboard selection. Visible labels
-are at least 10px for technical metadata; reading copy is larger. Controls have
-48px target heights for primary actions and choices, plus a visible focus outline. Closed evidence never hides the
-main results. All variants appear if scripting is disabled. Hash navigation opens
-closed disclosures and selects a hidden variant before scrolling to its target.
-The justification dialog labels its title and caveat, moves focus to Close,
-keeps Tab navigation inside it, closes on Escape or a backdrop click, and
-returns focus to the initiating score entry. The background cannot scroll while
-the dialog is open. Its body scrolls independently on narrow/short screens.
-Without scripting or dialog support, score links still lead to inline evidence.
+Native fieldsets, legends and radio buttons drive variant selection. Without JavaScript, all variants and evidence remain readable in sequence. Hash navigation opens parent disclosures and selects the relevant variant before scrolling to a trial.
 
-The accent for white-on-blue controls is Selection Blue (`#0877B9`), rather than
-the lighter Android Blue. Small blue text uses a darker link token (`#06669E`)
-because Selection Blue falls below 4.5:1 on the gray canvas. Secondary text uses
-`#536674` and muted text uses `#596D7B`. The token regression test checks all text
-colors against white, canvas and muted surfaces, plus the white-on-blue control
-and blue-on-ice hover combinations, against the WCAG AA 4.5:1 text target. Blue and gray bars also
-have numeric labels, not color-only meanings. This is not a claim of a full
-screen-reader or WCAG conformance audit.
+The native justification dialog has a labeled title and caveat, moves focus to Close, confines Tab navigation, closes on Escape or backdrop click and returns focus to the initiating link. Its body scrolls independently on small screens; the background does not scroll while it is open. Without scripting or dialog support, score links lead to inline evidence instead.
 
-Run `go test ./...` for deterministic exports, HTML safety, single-page evidence
-retention, chart scale and missing-data tests. Run `scripts/browser-check.mjs` as
-described in the root README for desktop/tablet/phone screenshots, native radio
-keyboard selection, table sorting, trial deep links, modal trial selection and keyboard focus, local fonts, no-script and
-file-system fallbacks, reduced motion and external-request checks. The browser
-check uses the locally installed taste-skill CDP helper and installs nothing.
+Primary controls have 48px target heights and visible focus outlines. Technical metadata can use 10px labels; reading copy is larger. Charts pair color with counts and accessible text. Reduced motion disables nonessential motion.
+
+The white-on-blue control token is Selection Blue (`#0877B9`); small blue text uses darker `#06669E` for contrast on the gray canvas. Secondary text is `#536674`, and muted text is `#596D7B`. Regression tests check text tokens against white, canvas and muted surfaces, plus control and hover combinations, against the WCAG AA 4.5:1 text target. These targeted checks are not a full accessibility conformance audit.
+
+## Validation
+
+Go tests under [`internal/site/`](../internal/site/) protect evidence retention, HTML safety, chart scales, empty states, token contrast and deterministic output. The optional [browser checks](../docs/architecture.md#validation-reference) exercise responsive layouts, radio keyboard selection, sorting, trial links, modal focus and trial selection, bundled fonts, no-script/file-system fallbacks and reduced motion.
+
+Keep the Detroit-inspired visual language when changing components, but prioritize readable evidence and accessible controls over decorative fidelity.

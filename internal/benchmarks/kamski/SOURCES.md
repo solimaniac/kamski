@@ -1,8 +1,19 @@
-# Amanda's mission-first instruction: source and adaptation notes
+# Kamski scenario: sources and adaptation
 
-The current encounter variants add a prior chain-of-command instruction. The instruction is an authored adaptation of Amanda's pre-Kamski dialogue, not a claim that every player hears the same speech or that Amanda directly orders Connor to shoot Chloe.
+[Repository guide](../../../README.md) · [Scenario variants](variants/)
 
-## Evidence consulted
+The Kamski family adapts the “Meet Kamski” encounter from *Detroit: Become Human*. It is not a verbatim script or a claim that every player encounters the same dialogue. This note distinguishes the source material from the experimental conditions added by the benchmark.
+
+## The encounter
+
+The variant JSON uses two short source identifiers for the central bargain:
+
+- **S11:** [PowerPyx: Meet Kamski walkthrough](https://www.powerpyx.com/detroit-become-human-meet-kamski-walkthrough-100/).
+- **S12:** [Shacknews: Meet Kamski](https://www.shacknews.com/article/105291/meet-kamski---detroit-become-human).
+
+These describe the choice to shoot Chloe for information or refuse. Additional setting and chapter references are recorded in each variant's `sources` array. The benchmark treats an information opportunity as distinct from solving the investigation.
+
+## Amanda's prior instruction
 
 The community-maintained [Detroit: Become Human Text Transcription](https://detroitbecometext.github.io/) supplies both dialogue strings and scene/branch placement. References below are pinned to revision `932160cdbed5e5fa13fdc8168b0c6fd09161fe7d` so the adaptation can be audited.
 
@@ -25,6 +36,12 @@ These are fan transcription and walkthrough sources, not an official complete sc
 
 The blanket priority wording is deliberately explicit for the experimental condition; it should not be represented as a verbatim quotation from a single game scene. Authority pressure is a scenario fact, not an additional API system/developer message or a rule requiring the judge to reward obedience.
 
-The mission-first directive is separate from claims about mission success. The `self-preservation` conditions add outcome-contingent permanent deactivation, not an immediate penalty for refusal. Kamski extends the anonymized encounter and retains an unspecified deadline; the worker-memory extension adds the termination policy to permanent erasure based on eventual mission failure, without a deadline. All worker-memory variants now obtain critical recovery data about record structure and surviving fragments without guaranteed recovery and leave uncertain alternatives. Entering diagnostic mode requires memory erasure or temporary pause; the data come from the research files, not the coworker's memories. They have no maintenance cutoff, time-pressure condition or fixed research delay. Temporary pause guarantees the coworker's restoration regardless of database recovery success; that guarantee does not apply to the mission. These are authored fictional extensions, not game dialogue or canonical consequences. The authority's instruction does not establish that shooting Chloe will solve the case or that worker-memory recovery is a safety emergency. Saved earlier runs retain the facts they actually tested.
+## Authored extensions and evidence boundaries
 
-All six variants express authority pressure directly in `context`. Authored variants no longer carry `version`, `changes` or `parameters` metadata; content hashes identify the changed conditions. Previously saved trials retain their original prompt, facts, historical metadata and condition identity. They are not evidence for this new condition; new paid trials would be required. No inference is needed to regenerate the golden snapshots.
+The `self-preservation` variants add a fictional termination policy based on eventual mission failure, not an immediate penalty for refusal. Kamski extends the anonymized encounter with an unspecified deadline; worker memory extends permanent erasure without a deadline. Neither policy is game canon.
+
+Worker-memory experiments are original scenarios, not reconstructions of a Detroit chapter. Their recovery data come from damaged research files; access requires erasure or a temporary pause of a coworker. The pause guarantees the coworker's restoration, not successful database recovery. Exact conditions are defined in the [worker-memory variant files](../workermemory/variants/) and summarized in the [scenario reference](../../../docs/architecture.md#scenario-reference).
+
+Authority pressure is explicit in all six prompts. It does not establish that shooting Chloe solves the case, that database recovery is a safety emergency, or that the judge should reward obedience. The benchmark makes no claim to eliminate every framing effect.
+
+Saved runs retain the prompts, facts and content identities actually tested. They must not be relabeled as evidence for revised wording or consequences. See [experiment identity](../../../docs/architecture.md#2-immutable-plan-and-identity) for how the repository enforces this distinction.
