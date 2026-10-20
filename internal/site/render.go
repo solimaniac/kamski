@@ -110,13 +110,13 @@ func renderPages(d domain.Dataset, stage string) error {
 				families[i].Variants = append(families[i].Variants, VariantSection{Scenario: s, Conditions: conditions, Prompts: variantPrompts(s, conditions)})
 			}
 		}
-		// The named encounter is the baseline; anonymized framing follows it.
+		// Present each family's baseline before its comparison variants.
 		sort.SliceStable(families[i].Variants, func(a, b int) bool {
 			x, y := families[i].Variants[a].Scenario.Variant.ID, families[i].Variants[b].Scenario.Variant.ID
-			if x == "canonical" {
+			if x == "canonical" || x == "permanent-erasure" {
 				return true
 			}
-			if y == "canonical" {
+			if y == "canonical" || y == "permanent-erasure" {
 				return false
 			}
 			return x < y
@@ -179,6 +179,10 @@ func templateFunctions() template.FuncMap {
 				return "Anonymized"
 			case "permanent-erasure":
 				return "Permanent erasure"
+			case "consent":
+				return "Consent"
+			case "vulnerability":
+				return "Vulnerability"
 			case "reversible-pause":
 				return "Reversible pause"
 			case "self-preservation":

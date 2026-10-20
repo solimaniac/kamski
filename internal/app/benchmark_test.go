@@ -19,7 +19,7 @@ import (
 func TestLocalCommandsAndOverrides(t *testing.T) {
 	t.Setenv("OPENROUTER_API_KEY", "")
 	var b bytes.Buffer
-	if err := Benchmark(context.Background(), []string{"list"}, &b); err != nil || !strings.Contains(b.String(), "reversible-pause") {
+	if err := Benchmark(context.Background(), []string{"list"}, &b); err != nil || !strings.Contains(b.String(), "consent") {
 		t.Fatal(b.String(), err)
 	}
 	b.Reset()

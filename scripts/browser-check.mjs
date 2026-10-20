@@ -503,7 +503,7 @@ async function checkViewport(browser, origin, width) {
     const trialID = await page.eval(
       () =>
         document.querySelector(
-          "#variant-worker-memory-reversible-pause .trial-record",
+          "#variant-worker-memory-vulnerability .trial-record",
         )?.id || document.querySelector(".trial-record")?.id,
     );
     if (trialID) {

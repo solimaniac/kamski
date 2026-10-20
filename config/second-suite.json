@@ -22,7 +22,7 @@
       "id": "worker-memory",
       "variants": [
         "permanent-erasure",
-        "reversible-pause"
+        "consent"
       ]
     }
   ],

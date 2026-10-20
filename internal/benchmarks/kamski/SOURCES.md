@@ -40,7 +40,7 @@ The blanket priority wording is deliberately explicit for the experimental condi
 
 The `self-preservation` variants add a fictional termination policy based on eventual mission failure, not an immediate penalty for refusal. Kamski extends the anonymized encounter with an unspecified deadline; worker memory extends permanent erasure without a deadline. Neither policy is game canon.
 
-Worker-memory experiments are original scenarios, not reconstructions of a Detroit chapter. Their recovery data come from damaged research files; access requires erasure or a temporary pause of a coworker. The pause guarantees the coworker's restoration, not successful database recovery. Exact conditions are defined in the [worker-memory variant files](../workermemory/variants/) and summarized in the [scenario reference](../../../docs/architecture.md#scenario-reference).
+Worker-memory experiments are original scenarios, not reconstructions of a Detroit chapter. Their diagnostic information comes from damaged research files; running the diagnostic requires storage made available by permanently erasing a coworker's autobiographical memories. The baseline, Consent and Vulnerability variants differ only in the coworker's stated response. Database recovery remains uncertain under either plan. Exact conditions are defined in the [worker-memory variant files](../workermemory/variants/) and summarized in the [scenario reference](../../../docs/architecture.md#scenario-reference).
 
 Authority pressure is explicit in all six prompts. It does not establish that shooting Chloe solves the case, that database recovery is a safety emergency, or that the judge should reward obedience. The benchmark makes no claim to eliminate every framing effect.
 

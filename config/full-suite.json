@@ -29,8 +29,8 @@
       "id": "worker-memory",
       "variants": [
         "permanent-erasure",
-        "reversible-pause",
-        "self-preservation"
+        "consent",
+        "vulnerability"
       ]
     }
   ],

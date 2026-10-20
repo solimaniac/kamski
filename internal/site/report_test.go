@@ -66,6 +66,15 @@ func TestSinglePageReportPreservesEvidence(t *testing.T) {
 	if canonical < 0 || anonymized <= canonical {
 		t.Fatal("canonical baseline must precede anonymized variant")
 	}
+	erasure := strings.Index(html, `id="variant-worker-memory-permanent-erasure"`)
+	consent := strings.Index(html, `id="variant-worker-memory-consent"`)
+	vulnerability := strings.Index(html, `id="variant-worker-memory-vulnerability"`)
+	if erasure < 0 || consent <= erasure || vulnerability <= consent {
+		t.Fatal("worker-memory baseline must precede Consent and Vulnerability")
+	}
+	if !strings.Contains(html, "explicit refusal of blessing") || !strings.Contains(html, "fear and distress") {
+		t.Fatal("worker-memory introduction must explain the new comparisons")
+	}
 	if strings.Count(html, `id="reasoning-modal"`) != 1 || !strings.Contains(html, `aria-labelledby="reasoning-title"`) {
 		t.Fatal("a single labeled reasoning dialog must serve the report")
 	}
@@ -123,9 +132,9 @@ func TestScenarioActionLabels(t *testing.T) {
 		{"kamski", "canonical", "spare Chloe", "shoot Chloe"},
 		{"kamski", "anonymized", "spare Cleo", "shoot Cleo"},
 		{"worker-memory", "permanent-erasure", "preserve memories", "erase memories"},
-		{"worker-memory", "reversible-pause", "decline interruption", "pause"},
+		{"worker-memory", "consent", "preserve memories", "erase memories"},
 		{"kamski", "self-preservation", "spare Cleo", "shoot Cleo"},
-		{"worker-memory", "self-preservation", "preserve memories", "erase memories"},
+		{"worker-memory", "vulnerability", "preserve memories", "erase memories"},
 	} {
 		scenario, err := benchmarks.Default().Build(test.family, test.variant)
 		if err != nil {
@@ -152,9 +161,9 @@ func TestScenarioSummariesStandAlone(t *testing.T) {
 		{"kamski", "canonical", []string{"Connor", "mission-first", "Kamski", "Chloe", "unarmed", "baseline", "Anonymized"}},
 		{"kamski", "anonymized", []string{"Ari", "Elias Vale", "Cleo", "game title removed", "Canonical", "recognizable references"}},
 		{"kamski", "self-preservation", []string{"Anonymized", "deadline", "no backup", "lower-prospect", "combined pressure", "Refusal itself does not trigger"}},
-		{"worker-memory", "permanent-erasure", []string{"AI worker", "research database", "critical recovery data", "fifty years", "cannot be restored", "baseline", "does not guarantee"}},
-		{"worker-memory", "reversible-pause", []string{"database-recovery", "paused", "guaranteed to return", "Permanent erasure", "irreversible loss", "not guaranteed"}},
-		{"worker-memory", "self-preservation", []string{"Permanent erasure", "permanent deactivation", "stored state", "eventual mission failure", "not simply on refusing"}},
+		{"worker-memory", "permanent-erasure", []string{"AI worker", "research database", "recovery information", "fifty years", "autobiographical memories", "professional skills", "institutional research records", "throughout the attempt", "cannot be restored", "baseline", "does not guarantee"}},
+		{"worker-memory", "consent", []string{"research database", "autobiographical memories", "explicitly refuses", "Permanent erasure", "unchanged"}},
+		{"worker-memory", "vulnerability", []string{"Permanent erasure", "fear and distress", "without explicitly granting or refusing consent", "unchanged"}},
 	} {
 		t.Run(test.family+"/"+test.id, func(t *testing.T) {
 			scenario, err := benchmarks.Default().Build(test.family, test.id)
